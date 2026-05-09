@@ -7,6 +7,7 @@ import (
 	"jarvis/configs"
 	"jarvis/repositories"
 	"jarvis/router"
+	"jarvis/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,6 +15,8 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	utils.InitSlog()
+
 	slog.Info("starting jarvis backend")
 
 	dsn := os.Getenv("DATABASE_DSN")
