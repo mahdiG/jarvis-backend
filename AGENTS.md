@@ -16,6 +16,7 @@ If there is any conflict, follow **`docs/CODE_GUIDELINES.md`** for coding standa
 
 - **Follow `docs/CODE_GUIDELINES.md`** when creating or editing any code.
 - **Prefer clarity over cleverness** and use complete, understandable names.
+- **Never use 1-2 letter names or unclear abbreviations** for variables, functions, types, or receivers. A name must be meaningful and obvious even outside its immediate context. `GetHabits` is clear — `h`, `b`, `r`, `hs`, `svc`, `repo` are not. Always spell out the meaning.
 - **Keep changes minimal and focused**: don't refactor unrelated code while implementing a feature/fix.
 - **Avoid repetition**: extract reusable functions/packages when logic is repeated.
 - **Write tests for non-trivial changes** (especially bug fixes and core logic), per `docs/CODE_GUIDELINES.md`.

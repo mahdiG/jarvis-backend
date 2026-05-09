@@ -4,7 +4,7 @@ This document is the **source of truth** for how we write code in this repositor
 
 - **Developers**: follow these guidelines when writing or reviewing code.
 - **AI agents**: you **must** follow these guidelines when generating or editing code in this repo.
-  - If the user gives feedback like “don’t do X again” or “prefer Y here”, **update this document** (or the most relevant doc in `docs/`) so the mistake is not repeated.
+  - If the user gives feedback like "don't do X again" or "prefer Y here", **update this document** (or the most relevant doc in `docs/`) so the mistake is not repeated.
 
 ## Principles (highest priority)
 
@@ -16,20 +16,29 @@ This document is the **source of truth** for how we write code in this repositor
 
 ## Naming
 
-- **Use complete, understandable names**: avoid short/unclear names (example bad names: `b`, `res`, `obj`, `foo`, single-letter variables like `t`, generic names like `data`). Names should be self-explanatory and reveal intent.
-- **Prefer descriptive names over abbreviations**: for example use `CreateHabit` instead of `NewH`, `GetHabitByID` instead of `Get`, `IsAuthenticated` instead of `Auth`. A variable name like `t` is never acceptable — always spell out the meaning.
+- **Never use 1-2 letter names or unclear abbreviations** — this is a hard rule, not a suggestion. Bad examples: `h`, `b`, `t`, `r`, `hs`, `res`, `obj`, `srv`, `repo`, `svc`, `data`. A name must be meaningful and obvious even outside of its immediate context. If you show the name to a random developer unfamiliar with the code, they should understand what it refers to without explanation.
+- **Prefer descriptive names over abbreviations**: use `CreateHabit` instead of `NewH`, `GetHabitByID` instead of `Get`, `IsAuthenticated` instead of `Auth`. No abbreviation is too obvious to skip — always spell out the meaning.
+- **The "random person" test**: can you tell a developer unfamiliar with this codebase what a function/variable does just by reading its name? If not, rename it. `GetHabits` passes — it's obvious. `h`, `b`, `r` fail — they carry no meaning to anyone.
 - **Prefer domain language**: name things after product concepts (habit, session, streak, event).
 - **Boolean naming**:
   - Use `Is/Has/Can/Should` prefixes: `IsAuthenticated`, `HasUnsavedChanges`.
   - Avoid double negatives.
 - **Function naming**:
   - Prefer verbs: `CreateHabit`, `GetHabitByID`, `DeleteHabit`, `ParseSchedule`.
+  - Function names must be unambiguous. `Get` is never acceptable — use `GetHabitByID`, `GetActiveGoals`, etc. A function name should make the return value obvious without reading its signature.
 - **Case conventions** (Go standard):
   - **PascalCase** for: exported functions (`CreateHabit`), exported types (`Habit`, `HabitController`), exported constants (`DefaultPort`, `UIDLength`).
   - **camelCase** for: unexported functions (`parseSchedule`), unexported types (`habitRepository`), variables (`completedCount`), local constants.
   - **snake_case** for: JSON field names (`"created_at"`), database column names (`updated_at`), environment variable names (`DATABASE_DSN`).
   - **kebab-case** for: URL paths (`/api/habits/:id`), middleware names, route group prefixes.
   - Never mix: don't use PascalCase in JSON tags or snake_case in Go identifiers.
+- **Directory and file names**:
+  - **Directories**: use `kebab-case`. May be singular or plural depending on what reads naturally (e.g., `repositories/`, `controllers/`, `utils/`, `configs/`).
+  - **Go source files**: use `kebab-case`. File names are usually singular — they reflect the primary type or responsibility (e.g., `habit.go`, `focus-session.go`, `weekly-review.go`, not `habits.go` or `focus-sessions.go`).
+  - **One primary exported type per file**: the file name matches that type. Cohesive helpers for the type may live in the same file. Avoid splitting one type across files or cramming many unrelated types into one file.
+- **Package naming**: package names must match their directory name — short, lowercase, no underscores, no mixed casing. For example, `package controllers` lives in `controllers/`, `package router` lives in `router/`. Avoid generic names like `package common` or `package util`.
+- **Export discipline**: start with unexported identifiers. Export only when an external package genuinely needs access. This keeps the public surface minimal and intentional. Avoid "export and regret" — unexporting is a breaking change for consumers.
+- **Import naming**: rely on Go's default import naming (the last segment of the package path). Use import aliases only to resolve collisions or when the default name is unclear. Never rename imports arbitrarily.
 
 ## Functions, modules, and structure
 
@@ -75,14 +84,14 @@ This document is the **source of truth** for how we write code in this repositor
 - **Handler error pattern**:
   ```go
   if err != nil {
-      if errors.Is(err, gorm.ErrRecordNotFound) {
+      if errors.Is(err, repositories.ErrRecordNotFound) {
           return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
               "error": "habit not found",
           })
       }
       slog.Error("failed to get habit", "id", id, "error", err)
       return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-          "error": "internal server error",
+          "error": "failed to get habit from database",
       })
   }
   ```
@@ -101,11 +110,17 @@ This document is the **source of truth** for how we write code in this repositor
   - Early returns over deeply nested `if`s.
   - Guard clauses at the top of functions.
 - **Be consistent**: match the existing style in the package unless there's a strong reason to change it.
-- **Avoid “magic”**:
+- **Avoid "magic"**:
   - Use constants for shared literals.
   - Document non-obvious constraints in code (with a short comment explaining *why*, not *what*).
 - **Use `gofmt` / standard Go formatting** — never fight the formatter.
 - **Import ordering**: standard library → third-party → internal modules, separated by blank lines.
+- **Comments**:
+  - Prefer explaining *why* a decision was made, not *what* the code does (the code is the *what*).
+  - Every exported identifier must have a doc comment (`// PackageName` for packages, `// FunctionName` for functions/types).
+  - Unexported helpers that are non-obvious should also have a comment.
+  - Keep comments up to date — a stale comment is worse than no comment.
+- **Receiver naming**: use meaningful receiver names that match the type. Prefer descriptive abbreviations over single letters (e.g., `habit Habit`, `service HabitService`). Be consistent across all methods on the same type.
 
 ## Dependencies & versions
 
@@ -130,6 +145,7 @@ Tests are how we keep the app stable and make refactors safe.
 - **Test behavior, not implementation**: assert outcomes and API contract, not internal calls.
 - **Keep tests readable**: arrange/act/assert structure, descriptive test names (`TestGetHabit_WhenNotFound`).
 - **Test file location**: place `_test.go` files in the same package as the code they test (white-box) or in an `_test` package (black-box) as appropriate.
+- **Test data**: use small, focused test helpers to build fixtures. Avoid large JSON files or shared global state across tests. Each test should set up its own data.
 
 ## Reviews & maintenance
 
