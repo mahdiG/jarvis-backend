@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"jarvis/models"
+
+	"gorm.io/gorm/clause"
 )
 
 func GetTasks() ([]models.Task, error) {
@@ -17,34 +19,31 @@ func GetTask(id models.UID) (models.Task, error) {
 	var task models.Task
 
 	result := db.
+		Clauses(clause.Returning{}).
 		Where(models.Task{Base: models.Base{ID: id}}).
-		First(&task, id)
-
-	// return task, utils.WrapError(result.Error)
-	return task, result.Error
-}
-
-func CreateTask(task *models.Task) error {
-	uid, err := models.NewUID()
-	if err != nil {
-		return err
-	}
-
-	task.ID = uid
-
-	result := db.Create(task)
-	return result.Error
-}
-
-func UpdateTask(id models.UID, updates models.Task) (models.Task, error) {
-	var task models.Task
-
-	result := db.
-		Model(&models.Task{Base: models.Base{ID: id}}).
-		Updates(updates).
 		First(&task)
 
 	return task, result.Error
+}
+
+func CreateTask(task models.Task) (models.Task, error) {
+	result := db.Create(&task)
+	return task, result.Error
+}
+
+func UpdateTask(task models.Task) (models.Task, error) {
+	result := db.
+		Clauses(clause.Returning{}).
+		Where("id = ?", task.ID).
+		Updates(&task)
+
+	if result.Error != nil {
+		return task, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return task, ErrRecordNotFound
+	}
+	return task, nil
 }
 
 func DeleteTask(id models.UID) error {
@@ -52,5 +51,11 @@ func DeleteTask(id models.UID) error {
 		Where(models.Task{Base: models.Base{ID: id}}).
 		Delete(&models.Task{})
 
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }

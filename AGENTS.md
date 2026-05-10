@@ -36,6 +36,25 @@ Default behavior:
 - Update `docs/CODE_GUIDELINES.md` for coding/process rules.
 - Update `docs/JARVIS_LIFE_OS_VISION.md` for product principles and direction.
 
+## Documenting learned facts (required)
+
+Whenever an AI agent learns a useful fact about the codebase, a user preference, a project convention, a gotcha, or anything else that would make it easier for future agents (or humans) to work effectively here, it must immediately document it in the appropriate file.
+
+Types of facts to document:
+
+- **Codebase insights**: non-obvious structure, tricky dependencies, architectural decisions, known quirks.
+- **User preferences**: naming conventions, style choices, tooling preferences, process preferences.
+- **Project gotchas**: common pitfalls, tests that fail for subtle reasons, environment setup quirks.
+- **Workflow improvements**: scripts, aliases, commands, or patterns that save time.
+
+Default behavior:
+
+- Update `AGENTS.md` for agent-specific rules, workflow tips, and cross-cutting conventions.
+- Update `docs/CODE_GUIDELINES.md` for coding standards, patterns, or style rules.
+- Update `docs/progress.md` for notable changes in project state or direction.
+
+When in doubt, add the fact to `AGENTS.md` rather than leaving it undocumented. A short note beats tribal knowledge.
+
 ## Working agreements
 
 - **No dependency changes** unless clearly necessary and aligned with the repo direction.

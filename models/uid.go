@@ -44,3 +44,15 @@ type Base struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
+
+// BeforeCreate generates a UID if one is not already set.
+func (b *Base) BeforeCreate(_ *gorm.DB) error {
+	if b.ID == "" {
+		id, err := NewUID()
+		if err != nil {
+			return err
+		}
+		b.ID = id
+	}
+	return nil
+}

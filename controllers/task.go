@@ -26,8 +26,7 @@ func GetTasks(c *fiber.Ctx) error {
 func GetTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	uid := models.UID(id)
-	task, err := repositories.GetTask(uid)
+	task, err := repositories.GetTask(models.UID(id))
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -52,7 +51,7 @@ func CreateTask(c *fiber.Ctx) error {
 		return nil
 	}
 
-	err := repositories.CreateTask(&task)
+	task, err := repositories.CreateTask(task)
 	if err != nil {
 		slog.Error("failed to create task", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -66,13 +65,14 @@ func CreateTask(c *fiber.Ctx) error {
 func UpdateTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var updates models.Task
-	if !ParseAndValidate(c, &updates) {
+	var input models.Task
+	if !ParseAndValidate(c, &input) {
 		return nil
 	}
 
-	uid := models.UID(id)
-	task, err := repositories.UpdateTask(uid, updates)
+	input.ID = models.UID(id)
+
+	task, err := repositories.UpdateTask(input)
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -92,8 +92,7 @@ func UpdateTask(c *fiber.Ctx) error {
 func DeleteTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	uid := models.UID(id)
-	err := repositories.DeleteTask(uid)
+	err := repositories.DeleteTask(models.UID(id))
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
