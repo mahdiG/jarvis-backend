@@ -12,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const defaultPort = "8080"
+const defaultPort = "3000"
 
 func main() {
 	utils.InitSlog()
