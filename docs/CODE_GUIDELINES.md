@@ -109,6 +109,19 @@ This document is the **source of truth** for how we write code in this repositor
 - **Prefer simple control flow**:
   - Early returns over deeply nested `if`s.
   - Guard clauses at the top of functions.
+- **Define variables before the `if` statement, not inside it**: declaring a variable inside `if` (`if err := fn(); err != nil {}`) reduces readability and makes it harder to distinguish the condition from the assignment. Always separate:
+  ```go
+  // Bad
+  if err := c.BodyParser(&req); err != nil {
+      return err
+  }
+
+  // Good
+  err := c.BodyParser(&req)
+  if err != nil {
+      return err
+  }
+  ```
 - **Be consistent**: match the existing style in the package unless there's a strong reason to change it.
 - **Avoid "magic"**:
   - Use constants for shared literals.

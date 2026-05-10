@@ -35,3 +35,26 @@ add settings store (lit signal). Also set/get locale to/from localstorage
 May 9 - 18:00
 Setup golang backend project structure
 
+
+May 10 - 13:02
+Think about database schema.
+What I want: Value/Wish/Identity (Musician) -> Goals (roadmaps) -> tasks
+But I don't want to design 10 layers of subtasks. Maybe with a flat/infinite system I can just use infinite subtasks:
+
+type Task struct {
+    ID          uint           `gorm:"primaryKey"`
+    Title       string
+    Description string
+    ParentID    *uint
+    Status      string         // active, done, archived
+    Type        string         // "value", "goal", "roadmap", "task", "habit"
+    ScheduledFor *time.Time
+    Metadata    datatypes.JSON `gorm:"type:json"` // e.g., {"ai_breakdown": [...], "score": 0.7}
+    CreatedAt   time.Time
+    UpdatedAt   time.Time
+}
+
+AI SAYS: And a content note
+This exact decision—"why I used a single recursive table instead of premature micro-categorization for my AI Life OS"—is the kind of piece that resonates deeply with senior engineers. It shows you know how to balance immediate delivery with long-term flexibility, and that you're not afraid to start simple. Write it down now, even as a paragraph in your progress log.
+
+Fighting temptations to use new shiny technologies and stay with boring mature tech that works and ships fast.

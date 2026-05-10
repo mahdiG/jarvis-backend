@@ -20,7 +20,12 @@ func NewDatabase(dsn string) (*gorm.DB, error) {
 	}
 
 	slog.Info("running auto-migrations")
-	if err := db.AutoMigrate(&models.Habit{}); err != nil {
+
+	err = db.AutoMigrate(
+		&models.Task{},
+	)
+
+	if err != nil {
 		return nil, fmt.Errorf("failed to run auto-migration: %w", err)
 	}
 
