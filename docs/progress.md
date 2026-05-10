@@ -30,3 +30,8 @@ Add localization, make event timeline page functional. AI struggle a little with
 
 May 8 - 00:00
 add settings store (lit signal). Also set/get locale to/from localstorage
+
+
+May 9 - 18:00
+Setup golang backend project structure
+
