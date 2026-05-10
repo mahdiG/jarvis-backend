@@ -1,4 +1,4 @@
-package controllers
+package controllers_test
 
 import (
 	"encoding/json"
@@ -8,14 +8,15 @@ import (
 
 	"jarvis/models"
 	"jarvis/repositories"
+	"jarvis/router"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// testDB is the shared in-memory SQLite database used by all tests.
-var testDB *gorm.DB
+// TestDB is the shared in-memory SQLite database used by all tests.
+var TestDB *gorm.DB
 
 // TestMain initializes the in-memory test database once and runs all tests.
 func TestMain(m *testing.M) {
@@ -29,39 +30,33 @@ func TestMain(m *testing.M) {
 		panic("failed to migrate test database: " + err.Error())
 	}
 
-	testDB = db
+	TestDB = db
 	repositories.Init(db)
 
 	m.Run()
 }
 
-// newTestApp creates a new Fiber application with all task routes registered.
+// newTestApp creates a new Fiber application with routes registered via the router package.
 func newTestApp() *fiber.App {
 	app := fiber.New()
-	v1 := app.Group("/v1")
-	tasks := v1.Group("/tasks")
-	tasks.Get("/", GetTasks)
-	tasks.Post("/", CreateTask)
-	tasks.Get("/:id", GetTask)
-	tasks.Patch("/:id", UpdateTask)
-	tasks.Delete("/:id", DeleteTask)
+	router.Setup(app, TestDB)
 	return app
 }
 
-// beginTx starts a new database transaction and sets it as the global repository DB
+// BeginTx starts a new database transaction and sets it as the global repository DB
 // so that all repository calls during the test execute within the transaction.
 // Returns a cleanup function that rolls back the transaction and restores the original DB.
-func beginTx() func() {
-	tx := testDB.Begin()
+func BeginTx() func() {
+	tx := TestDB.Begin()
 	repositories.Init(tx)
 	return func() {
 		tx.Rollback()
-		repositories.Init(testDB)
+		repositories.Init(TestDB)
 	}
 }
 
-// performRequest sends an HTTP request to the given Fiber app and returns the response.
-func performRequest(app *fiber.App, method, path, body string) (*http.Response, error) {
+// PerformRequest sends an HTTP request to the given Fiber app and returns the response.
+func PerformRequest(app *fiber.App, method, path, body string) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, strings.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -70,14 +65,14 @@ func performRequest(app *fiber.App, method, path, body string) (*http.Response, 
 	return app.Test(req)
 }
 
-// decodeJSON decodes the JSON response body into the given target.
-func decodeJSON(resp *http.Response, target any) error {
+// DecodeJSON decodes the JSON response body into the given target.
+func DecodeJSON(resp *http.Response, target any) error {
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
-// responseError is the standard error response envelope.
-type responseError struct {
+// ResponseError is the standard error response envelope.
+type ResponseError struct {
 	Error string `json:"error"`
 }
 
@@ -86,12 +81,12 @@ type responseError struct {
 // --------------------------------------------------------------------------
 
 func TestCreateTask_Success(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "POST", "/v1/tasks", `{"title":"Buy milk","description":"Remember to buy milk"}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tasks", `{"title":"Buy milk","description":"Remember to buy milk"}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -100,7 +95,7 @@ func TestCreateTask_Success(t *testing.T) {
 	}
 
 	var task models.Task
-	err = decodeJSON(resp, &task)
+	err = DecodeJSON(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -119,12 +114,12 @@ func TestCreateTask_Success(t *testing.T) {
 }
 
 func TestCreateTask_InvalidBody(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "POST", "/v1/tasks", `{invalid json}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tasks", `{invalid json}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -132,8 +127,8 @@ func TestCreateTask_InvalidBody(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp responseError
-	err = decodeJSON(resp, &errResp)
+	var errResp ResponseError
+	err = DecodeJSON(resp, &errResp)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -143,12 +138,12 @@ func TestCreateTask_InvalidBody(t *testing.T) {
 }
 
 func TestCreateTask_MissingRequiredTitle(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "POST", "/v1/tasks", `{"description":"missing title"}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tasks", `{"description":"missing title"}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -160,7 +155,7 @@ func TestCreateTask_MissingRequiredTitle(t *testing.T) {
 		Error  string `json:"error"`
 		Fields []any  `json:"fields"`
 	}
-	err = decodeJSON(resp, &errResp)
+	err = DecodeJSON(resp, &errResp)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -174,12 +169,12 @@ func TestCreateTask_MissingRequiredTitle(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestGetTasks_Empty(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "GET", "/v1/tasks", "")
+	resp, err := PerformRequest(app, "GET", "/v1/tasks", "")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -188,7 +183,7 @@ func TestGetTasks_Empty(t *testing.T) {
 	}
 
 	var tasks []models.Task
-	err = decodeJSON(resp, &tasks)
+	err = DecodeJSON(resp, &tasks)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -198,7 +193,7 @@ func TestGetTasks_Empty(t *testing.T) {
 }
 
 func TestGetTasks_WithItems(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed two tasks directly into the repository.
@@ -213,7 +208,7 @@ func TestGetTasks_WithItems(t *testing.T) {
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "GET", "/v1/tasks", "")
+	resp, err := PerformRequest(app, "GET", "/v1/tasks", "")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -222,7 +217,7 @@ func TestGetTasks_WithItems(t *testing.T) {
 	}
 
 	var tasks []models.Task
-	err = decodeJSON(resp, &tasks)
+	err = DecodeJSON(resp, &tasks)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -246,7 +241,7 @@ func TestGetTasks_WithItems(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestGetTask_Success(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task so we know its ID.
@@ -257,7 +252,7 @@ func TestGetTask_Success(t *testing.T) {
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "GET", "/v1/tasks/"+string(original.ID), "")
+	resp, err := PerformRequest(app, "GET", "/v1/tasks/"+string(original.ID), "")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -266,7 +261,7 @@ func TestGetTask_Success(t *testing.T) {
 	}
 
 	var task models.Task
-	err = decodeJSON(resp, &task)
+	err = DecodeJSON(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -282,12 +277,12 @@ func TestGetTask_Success(t *testing.T) {
 }
 
 func TestGetTask_NotFound(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "GET", "/v1/tasks/nonexistent1", "")
+	resp, err := PerformRequest(app, "GET", "/v1/tasks/nonexistent1", "")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -295,8 +290,8 @@ func TestGetTask_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp responseError
-	err = decodeJSON(resp, &errResp)
+	var errResp ResponseError
+	err = DecodeJSON(resp, &errResp)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -310,7 +305,7 @@ func TestGetTask_NotFound(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestUpdateTask_Success(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task.
@@ -321,7 +316,7 @@ func TestUpdateTask_Success(t *testing.T) {
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "PATCH", "/v1/tasks/"+string(original.ID), `{"title":"Updated title","description":"Updated description"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/"+string(original.ID), `{"title":"Updated title","description":"Updated description"}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -330,7 +325,7 @@ func TestUpdateTask_Success(t *testing.T) {
 	}
 
 	var task models.Task
-	err = decodeJSON(resp, &task)
+	err = DecodeJSON(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -343,7 +338,7 @@ func TestUpdateTask_Success(t *testing.T) {
 }
 
 func TestUpdateTask_PartialUpdate(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task.
@@ -355,7 +350,7 @@ func TestUpdateTask_PartialUpdate(t *testing.T) {
 	app := newTestApp()
 
 	// Update only the title.
-	resp, err := performRequest(app, "PATCH", "/v1/tasks/"+string(original.ID), `{"title":"Only title changed"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/"+string(original.ID), `{"title":"Only title changed"}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -364,7 +359,7 @@ func TestUpdateTask_PartialUpdate(t *testing.T) {
 	}
 
 	var task models.Task
-	err = decodeJSON(resp, &task)
+	err = DecodeJSON(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -378,12 +373,12 @@ func TestUpdateTask_PartialUpdate(t *testing.T) {
 }
 
 func TestUpdateTask_NotFound(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "PATCH", "/v1/tasks/nonexistent1", `{"title":"Should fail"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/nonexistent1", `{"title":"Should fail"}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -391,8 +386,8 @@ func TestUpdateTask_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp responseError
-	err = decodeJSON(resp, &errResp)
+	var errResp ResponseError
+	err = DecodeJSON(resp, &errResp)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -406,7 +401,7 @@ func TestUpdateTask_NotFound(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDeleteTask_Success(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task.
@@ -417,7 +412,7 @@ func TestDeleteTask_Success(t *testing.T) {
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "DELETE", "/v1/tasks/"+string(original.ID), "")
+	resp, err := PerformRequest(app, "DELETE", "/v1/tasks/"+string(original.ID), "")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -433,12 +428,12 @@ func TestDeleteTask_Success(t *testing.T) {
 }
 
 func TestDeleteTask_NotFound(t *testing.T) {
-	cleanup := beginTx()
+	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := performRequest(app, "DELETE", "/v1/tasks/nonexistent1", "")
+	resp, err := PerformRequest(app, "DELETE", "/v1/tasks/nonexistent1", "")
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -446,8 +441,8 @@ func TestDeleteTask_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp responseError
-	err = decodeJSON(resp, &errResp)
+	var errResp ResponseError
+	err = DecodeJSON(resp, &errResp)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}

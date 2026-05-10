@@ -13,6 +13,7 @@ This document is the **source of truth** for how we write code in this repositor
 - **Small, composable pieces**: prefer functional and modular code where each function does one clear thing.
 - **Stability through tests**: write tests so changing code later is safe and fast.
 - **Fail fast**: validate inputs early, return errors explicitly, and don't silently swallow failures.
+- **Follow best practices**: Always follow best practices and standards so we have a good code base.
 - **Start simple, iterate**: prefer a flat/infinite recursive structure over premature micro-categorization. The task model is a single recursive table — this lets you restructure later without migration pain.
 
 ---
