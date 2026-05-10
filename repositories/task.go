@@ -36,7 +36,7 @@ func CreateTask(task *models.Task) error {
 	return result.Error
 }
 
-func UpdateTask(id models.UID, updates map[string]any) (models.Task, error) {
+func UpdateTask(id models.UID, updates models.Task) (models.Task, error) {
 	var task models.Task
 
 	result := db.

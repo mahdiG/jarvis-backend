@@ -45,24 +45,11 @@ func GetTask(c *fiber.Ctx) error {
 	return c.JSON(task)
 }
 
-// CreateTaskRequest is the expected JSON body for creating a task.
-type CreateTaskRequest struct {
-	Title       string     `json:"title"       validate:"required"`
-	Description string     `json:"description"`
-	ParentID    models.UID `json:"parent_id"`
-}
-
 func CreateTask(c *fiber.Ctx) error {
-	var req CreateTaskRequest
+	var task models.Task
 
-	if !ParseAndValidate(c, &req) {
+	if !ParseAndValidate(c, &task) {
 		return nil
-	}
-
-	task := models.Task{
-		Title:       req.Title,
-		Description: req.Description,
-		ParentID:    req.ParentID,
 	}
 
 	err := repositories.CreateTask(&task)
@@ -76,37 +63,12 @@ func CreateTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(task)
 }
 
-// UpdateTaskRequest is the expected JSON body for updating a task.
-// Only provided fields will be updated.
-type UpdateTaskRequest struct {
-	Title       *string     `json:"title"       validate:"omitempty"`
-	Description *string     `json:"description"`
-	ParentID    *models.UID `json:"parent_id"`
-}
-
 func UpdateTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var req UpdateTaskRequest
-	if !ParseAndValidate(c, &req) {
+	var updates models.Task
+	if !ParseAndValidate(c, &updates) {
 		return nil
-	}
-
-	updates := make(map[string]any)
-	if req.Title != nil {
-		updates["title"] = *req.Title
-	}
-	if req.Description != nil {
-		updates["description"] = *req.Description
-	}
-	if req.ParentID != nil {
-		updates["parent_id"] = *req.ParentID
-	}
-
-	if len(updates) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "no fields to update",
-		})
 	}
 
 	uid := models.UID(id)

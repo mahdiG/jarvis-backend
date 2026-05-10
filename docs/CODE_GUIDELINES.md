@@ -103,6 +103,8 @@ This document is the **source of truth** for how we write code in this repositor
 - **Use Fiber's `c.Params`, `c.Query`, `c.BodyParser`** for input extraction.
 - **Validate parsed input** before passing to business logic.
 - **Use `fiber.Map`** for ad-hoc JSON maps, or dedicated response types for complex structures.
+- **Use GORM model structs as API contracts directly** — do not create separate request or response DTOs. The `models/` package owns both the database schema and the API contract. Add JSON tags (snake_case) and validation tags directly to the model struct. The frontend sends/receives JSON that maps to these same struct fields. This keeps the API surface in sync with the data layer and eliminates translation code.
+
 
 ## Formatting & style
 

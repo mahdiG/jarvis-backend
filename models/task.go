@@ -2,7 +2,7 @@ package models
 
 type Task struct {
 	Base
-	Title       string `gorm:"not null"`
+	Title       string `gorm:"not null" validate:"required"`
 	Description string
 	ParentID    UID
 	// Status       string // active, done, archived
