@@ -194,7 +194,7 @@ if err != nil {
 - **Handlers should be thin**: parse request, delegate to repository, format response.
 - **Use consistent JSON response format**: `{"error": "..."}` for errors, direct object/array for success.
 - **Use Fiber's `c.Params`, `c.Query`, `c.BodyParser`** for input extraction.
-- **Validate parsed input** before passing to business logic via `ParseAndValidate` (see below).
+- **Validate parsed input** before passing to business logic via `Validate` (see below).
 - **Use `fiber.Map`** for ad-hoc JSON maps, or dedicated response types for complex structures.
 - **Use GORM model structs as API contracts directly** — do not create separate request or response DTOs. The `models/` package owns both the database schema and the API contract. Add JSON tags (snake_case) and validation tags directly to the model struct. The frontend sends/receives JSON that maps to these same struct fields. This keeps the API surface in sync with the data layer and eliminates translation code.
 
@@ -202,11 +202,11 @@ if err != nil {
 
 ## Parsing & validation
 
-Use the generic `ParseAndValidate[T]` helper in `controllers/validate.go`:
+Use the generic `Validate[T]` helper in `controllers/validate.go`:
 
 ```go
 var task models.Task
-if !ParseAndValidate(c, &task) {
+if !Validate(c, &task) {
     return nil  // response already sent
 }
 ```
