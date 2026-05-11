@@ -2,14 +2,12 @@ package router
 
 import (
 	"jarvis/controllers"
-	"jarvis/services"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 // Setup configures all application routes.
-func Setup(app *fiber.App, db *gorm.DB, agent *services.Agent) {
+func Setup(app *fiber.App) {
 
 	v1 := app.Group("/v1")
 
@@ -21,6 +19,6 @@ func Setup(app *fiber.App, db *gorm.DB, agent *services.Agent) {
 	tasks.Delete("/:id", controllers.DeleteTask)
 
 	chat := v1.Group("/chat")
-	chat.Post("/", controllers.ChatHandler(agent))
+	chat.Post("/", controllers.GetChatMessage)
 
 }

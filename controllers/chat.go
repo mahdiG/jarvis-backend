@@ -1,7 +1,9 @@
 package controllers
 
 import (
-	"jarvis/services"
+	"log/slog"
+
+	"jarvis/agent"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -10,24 +12,25 @@ import (
 type ChatRequest struct {
 	// Messages is the conversation history so far.
 	// The last message should be from the user.
-	Messages []services.AgentMessage `json:"messages" validate:"required,min=1"`
+	Messages []agent.Message `validate:"required,min=1"`
 }
 
-// ChatHandler creates a handler for the chat endpoint using the given agent.
-func ChatHandler(agent *services.Agent) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		var req ChatRequest
-		if !Validate(c, &req) {
-			return nil
-		}
+// GetChatMessage handles the chat endpoint.
+func GetChatMessage(c *fiber.Ctx) error {
+	var request ChatRequest
 
-		resp, err := agent.Chat(c.Context(), req.Messages)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "failed to process chat message: " + err.Error(),
-			})
-		}
-
-		return c.JSON(resp)
+	if !Validate(c, &request) {
+		return nil
 	}
+
+	response, err := agent.Chat(c.Context(), request.Messages)
+	if err != nil {
+		slog.Error("failed to process chat message", "error", err)
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "failed to process chat message",
+		})
+	}
+
+	return c.JSON(response)
 }
