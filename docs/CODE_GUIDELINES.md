@@ -43,6 +43,7 @@ This document is the **source of truth** for how we write code in this repositor
 - **Package naming**: package names must match their directory name — short, lowercase, no underscores, no mixed casing. For example, `package controllers` lives in `controllers/`, `package router` lives in `router/`. Avoid generic names like `package common` or `package util`.
 - **Export discipline**: start with unexported identifiers. Export only when an external package genuinely needs access. This keeps the public surface minimal and intentional. Avoid "export and regret" — unexporting is a breaking change for consumers.
 - **Import naming**: rely on Go's default import naming (the last segment of the package path). Use import aliases only to resolve collisions or when the default name is unclear. Never rename imports arbitrarily.
+- **Local variable naming**: never use single-letter or multi-letter abbreviations as local variable names. `r`, `s`, `b`, `t`, `hs`, `res`, `obj`, `srv`, `repo`, `svc`, `data`, `ref` are never acceptable. A local variable name must be descriptive enough that someone unfamiliar with the surrounding code understands what it holds. For example, `reflector`, `baseType`, `modelSchema`, `propertyNames` are clear — `r`, `s`, `b`, `t` are not. Type parameter names (`T`, `K`, `V`) are the only exception to this rule, and only in generic function/method signatures.
 - **Receiver naming**: use meaningful receiver names that match the type. Prefer descriptive abbreviations over single letters (e.g., `task Task`, `service HabitService`). Be consistent across all methods on the same type.
 - **File naming for tests**: test files use `_test.go` suffix with the same base name as the file they test (e.g., `task_test.go` for `task.go`). Place in the same package for white-box testing or an `_test` package for black-box testing.
 
@@ -162,6 +163,7 @@ Add more sentinels as needed (`ErrDuplicateEntry`, `ErrConflict`).
   - Use `fmt.Errorf("context: %w", err)` to wrap errors with context.
   - Use `errors.Is` / `errors.As` for sentinel/wrapped error checking.
   - Define sentinel errors (e.g., `var ErrNotFound = errors.New("not found")`) for expected failure cases.
+  - **Always use `utils.WrapError` when creating or returning errors** so the origin file:line is captured. This applies to all error returns — both new errors (`utils.WrapError(errors.New(...))`) and wrapped external errors (`utils.WrapError(err)`). This lets slog output show the true source of each error automatically via `ErrWithSource`.
 - **Runtime validation for external data**: anything coming from network (HTTP requests) or storage (DB) is untrusted — validate/parse before use.
 
 ---

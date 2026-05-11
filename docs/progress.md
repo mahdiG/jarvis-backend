@@ -75,3 +75,10 @@ Added centralized config with Viper:
 - Updated configs/database.go to build DSN from config fields
 - Updated cmd/api/main.go to use configs.LoadConfig()
 - .env already in .gitignore
+
+
+May 11 - 13:37
+Fixed "Invalid schema for function 'create_task': schema must be a JSON Schema of 'type: \"object\"', got 'type: null'" error.
+Root cause: `jsonschema.Reflector` returned a `$ref`-wrapped schema (pointing to a $defs entry) instead of an inline object, so the root-level `type` field was absent — causing OpenAI to reject it with `type: null`.
+Fix: Added `ExpandedStruct: true` to the reflector in `getToolSchemaFromModel()` so it expands the root struct and produces a schema with `type: "object"`.
+Also improved error tracing: wrapped `chatModel.Generate` errors with `fmt.Errorf` so agent errors show the specific call site in logs.

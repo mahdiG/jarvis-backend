@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"jarvis/configs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 // - Stack traces on error-level records
 // - Colorized output
 func InitSlog() {
+	slog.Info("configs.Envs", "IsStackTraceEnabled", configs.Envs.IsStackTraceEnabled)
 	// Don't use tint's AddSource — we add source ourselves so path format
 	// is consistent with stacktrace paths (project-relative via shortenPath).
 	tintHandler := tint.NewHandler(os.Stdout, &tint.Options{
@@ -27,12 +29,14 @@ func InitSlog() {
 		NoColor:    false,
 	})
 
-	// stackHandler := &StacktraceHandler{
-	// 	next: tintHandler,
-	// }
+	var slogHandler slog.Handler = tintHandler
+	if configs.Envs.IsStackTraceEnabled {
+		slogHandler = &StacktraceHandler{
+			next: tintHandler,
+		}
+	}
 
-	// slog.SetDefault(slog.New(stackHandler))
-	slog.SetDefault(slog.New(tintHandler))
+	slog.SetDefault(slog.New(slogHandler))
 }
 
 // StacktraceHandler wraps a slog.Handler and adds project-relative source
@@ -121,8 +125,23 @@ type ErrWithSource struct {
 	Source string
 }
 
-func (e ErrWithSource) Error() string { return e.Err.Error() }
+func (e ErrWithSource) Error() string {
+	if e.Source != "" {
+		return e.Err.Error() + " (" + e.Source + ")"
+	}
+	return e.Err.Error()
+}
 func (e ErrWithSource) Unwrap() error { return e.Err }
+
+// LogValue implements slog.LogValuer so that when this error is passed as a
+// slog attribute, the source origin appears as a structured field alongside the
+// error message.
+func (e ErrWithSource) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("message", e.Err.Error()),
+		slog.String("origin", e.Source),
+	)
+}
 
 // WrapError annotates err with the caller's source file and line number.
 // If err is nil, it returns nil. If err already has source info, it is kept.

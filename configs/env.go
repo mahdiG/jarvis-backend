@@ -11,6 +11,10 @@ var Envs EnvsConfig
 
 // Config holds all application configuration loaded from environment variables.
 type EnvsConfig struct {
+	// General
+	ServerPort          string `mapstructure:"SERVER_PORT"`
+	IsStackTraceEnabled bool   `mapstructure:"IS_STACK_TRACE_ENABLED"`
+
 	// Database
 	DatabaseHost     string `mapstructure:"DB_HOST"`
 	DatabasePort     string `mapstructure:"DB_PORT"`
@@ -25,9 +29,6 @@ type EnvsConfig struct {
 	LLMBaseURL     string  `mapstructure:"LLM_BASE_URL"`
 	LLMMaxTokens   int     `mapstructure:"LLM_MAX_TOKENS"`
 	LLMTemperature float64 `mapstructure:"LLM_TEMPERATURE"`
-
-	// Server
-	ServerPort string `mapstructure:"SERVER_PORT"`
 }
 
 // LoadConfig reads configuration from a .env file and environment variables,

@@ -14,11 +14,12 @@ import (
 )
 
 func main() {
+	err := configs.LoadConfig()
+
 	utils.InitSlog()
 
 	slog.Info("starting jarvis backend")
 
-	err := configs.LoadConfig()
 	if err != nil {
 		slog.Error("failed to load configuration", "error", err)
 		os.Exit(1)

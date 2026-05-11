@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"jarvis/configs"
+	"jarvis/utils"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/model"
@@ -29,27 +30,27 @@ var chatModel model.BaseChatModel
 //   - LLM_TEMPERATURE  – temperature (default 0.7).
 func Init() error {
 	if configs.Envs.LLMApiKey == "" {
-		return errors.New("LLM_API_KEY is required")
+		return utils.WrapError(errors.New("LLM_API_KEY is required"))
 	}
 	if configs.Envs.LLMModel == "" {
-		return errors.New("LLM_MODEL is required")
+		return utils.WrapError(errors.New("LLM_MODEL is required"))
 	}
 
 	openAIConfig := buildOpenAIConfig()
 
 	openaiCompatibleChatModel, err := openai.NewChatModel(context.Background(), openAIConfig)
 	if err != nil {
-		return err
+		return utils.WrapError(err)
 	}
 
 	// Wrap the chat model with tool definitions so the LLM can call tools.
 	chatModelWithTools, err := einoagent.ChatModelWithTools(
 		openaiCompatibleChatModel,
 		openaiCompatibleChatModel,
-		[]*schema.ToolInfo{toolCreateTask()},
+		[]*schema.ToolInfo{getToolInfoCreateTask()},
 	)
 	if err != nil {
-		return err
+		return utils.WrapError(err)
 	}
 
 	chatModel = chatModelWithTools
@@ -64,7 +65,7 @@ func Chat(ctx context.Context, history []Message) (*Response, error) {
 
 	response, err := chatModel.Generate(ctx, messages)
 	if err != nil {
-		return nil, err
+		return nil, utils.WrapError(err)
 	}
 
 	actions := make([]ToolAction, 0)
@@ -109,7 +110,7 @@ func Chat(ctx context.Context, history []Message) (*Response, error) {
 	if len(response.ToolCalls) > 0 {
 		finalResponse, err := chatModel.Generate(ctx, messages)
 		if err != nil {
-			return nil, err
+			return nil, utils.WrapError(err)
 		}
 		reply = finalResponse.Content
 	}
@@ -126,7 +127,7 @@ func executeTool(ctx context.Context, toolCall schema.ToolCall) (string, error) 
 	case toolNameCreateTask:
 		return executeToolCreateTask(ctx, toolCall.Function.Arguments)
 	default:
-		return "", errors.New("unknown tool: " + toolCall.Function.Name)
+		return "", utils.WrapError(errors.New("unknown tool: " + toolCall.Function.Name))
 	}
 }
 
