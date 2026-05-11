@@ -47,7 +47,7 @@ func GetTask(c *fiber.Ctx) error {
 func CreateTask(c *fiber.Ctx) error {
 	var task models.Task
 
-	if !ParseAndValidate(c, &task) {
+	if !Validate(c, &task) {
 		return nil
 	}
 
@@ -66,7 +66,7 @@ func UpdateTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	var input models.Task
-	if !ParseAndValidate(c, &input) {
+	if !Validate(c, &input) {
 		return nil
 	}
 

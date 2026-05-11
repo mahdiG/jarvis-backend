@@ -7,17 +7,17 @@ import (
 
 var validate = validator.New()
 
-// ParseAndValidate parses the request body into the target struct and validates it
+// Validate parses the request body into the target struct and validates it
 // using the go-playground/validator library. If parsing or validation fails, it sends
 // a JSON error response and returns false. On success it returns true.
 //
 // Usage:
 //
 //	var req CreateTaskRequest
-//	if !ParseAndValidate(c, &req) {
+//	if !Validate(c, &req) {
 //	    return nil
 //	}
-func ParseAndValidate[T any](c *fiber.Ctx, target *T) bool {
+func Validate[T any](c *fiber.Ctx, target *T) bool {
 	err := c.BodyParser(target)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
