@@ -63,56 +63,59 @@ func Init() error {
 func Chat(ctx context.Context, history []Message) (*Response, error) {
 	messages := convertMessagesToSchemaMessages(history)
 
-	response, err := chatModel.Generate(ctx, messages)
-	if err != nil {
-		return nil, utils.WrapError(err)
-	}
-
 	actions := make([]ToolAction, 0)
-	reply := response.Content
+	var reply string
 
-	// Process any tool calls the model made.
-	for _, toolCall := range response.ToolCalls {
-		result, err := executeTool(ctx, toolCall)
-		if err != nil {
-			slog.Error("tool execution failed", "tool", toolCall.Function.Name, "error", err)
-			result = err.Error()
-		}
-
-		// Feed the tool result back to the model so it can produce a final reply.
-		// Preserve reasoning content if the model returned any (e.g. DeepSeek thinking mode).
-		assistantMessage := &schema.Message{
-			Role:             schema.Assistant,
-			Content:          "",
-			ToolCalls:        []schema.ToolCall{toolCall},
-			ReasoningContent: response.ReasoningContent,
-		}
-		messages = append(messages,
-			assistantMessage,
-			schema.ToolMessage(result, toolCall.ID),
-		)
-
-		action := ToolAction{
-			Tool:   toolCall.Function.Name,
-			Result: result,
-		}
-
-		// Attempt to parse the tool call arguments for the detail field.
-		var arguments any
-		if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &arguments); err == nil {
-			action.Detail = arguments
-		}
-
-		actions = append(actions, action)
-	}
-
-	// If we ran tools, get the final response from the model.
-	if len(response.ToolCalls) > 0 {
-		finalResponse, err := chatModel.Generate(ctx, messages)
+	for {
+		response, err := chatModel.Generate(ctx, messages)
 		if err != nil {
 			return nil, utils.WrapError(err)
 		}
-		reply = finalResponse.Content
+
+		slog.Debug("LLM response", "response", response)
+		slog.Debug("LLM response.ToolCalls", "tool calls", len(response.ToolCalls))
+
+		// No tool calls — this is the final text reply.
+		if len(response.ToolCalls) == 0 {
+			reply = response.Content
+			break
+		}
+
+		// Process each tool call and feed results back so the model can
+		// continue with follow-up tool calls (e.g. parent → child tasks).
+		for _, toolCall := range response.ToolCalls {
+			result, err := executeTool(ctx, toolCall)
+			if err != nil {
+				slog.Error("tool execution failed", "tool", toolCall.Function.Name, "error", err)
+				result = err.Error()
+			}
+
+			// Feed the tool result back to the model so it can produce a final reply.
+			// Preserve reasoning content if the model returned any (e.g. DeepSeek thinking mode).
+			assistantMessage := &schema.Message{
+				Role:             schema.Assistant,
+				Content:          "",
+				ToolCalls:        []schema.ToolCall{toolCall},
+				ReasoningContent: response.ReasoningContent,
+			}
+			messages = append(messages,
+				assistantMessage,
+				schema.ToolMessage(result, toolCall.ID),
+			)
+
+			action := ToolAction{
+				Tool:   toolCall.Function.Name,
+				Result: result,
+			}
+
+			// Attempt to parse the tool call arguments for the detail field.
+			var arguments any
+			if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &arguments); err == nil {
+				action.Detail = arguments
+			}
+
+			actions = append(actions, action)
+		}
 	}
 
 	return &Response{

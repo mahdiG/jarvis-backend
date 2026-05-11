@@ -82,3 +82,6 @@ Fixed "Invalid schema for function 'create_task': schema must be a JSON Schema o
 Root cause: `jsonschema.Reflector` returned a `$ref`-wrapped schema (pointing to a $defs entry) instead of an inline object, so the root-level `type` field was absent — causing OpenAI to reject it with `type: null`.
 Fix: Added `ExpandedStruct: true` to the reflector in `getToolSchemaFromModel()` so it expands the root struct and produces a schema with `type: "object"`.
 Also improved error tracing: wrapped `chatModel.Generate` errors with `fmt.Errorf` so agent errors show the specific call site in logs.
+
+May 11 - 14:49
+Fixed multi-turn tool calling in agent/Chat(): the previous code only supported one round of tool execution — it processed the first batch of tool calls, made a single follow-up LLM call, and only used its text content, discarding any follow-up tool calls (e.g. creating a child task after a parent). Fix: wrapped the generate→process cycle in a `for` loop that continues feeding tool results back until the LLM responds with text only.
