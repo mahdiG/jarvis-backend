@@ -13,24 +13,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const defaultPort = "3000"
-
 func main() {
 	utils.InitSlog()
 
 	slog.Info("starting jarvis backend")
 
-	dsn := os.Getenv("DATABASE_DSN")
-	if dsn == "" {
-		dsn = "host=localhost port=5432 user=jarvis password=jarvis dbname=jarvis sslmode=disable"
+	err := configs.LoadConfig()
+	if err != nil {
+		slog.Error("failed to load configuration", "error", err)
+		os.Exit(1)
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	db, err := configs.NewDatabase(dsn)
+	db, err := configs.NewDatabase()
 	if err != nil {
 		slog.Error("failed to initialize database", "error", err)
 		os.Exit(1)
@@ -49,8 +43,8 @@ func main() {
 
 	router.Setup(app, db, agent)
 
-	slog.Info("server listening", "port", port)
-	if err := app.Listen(":" + port); err != nil {
+	slog.Info("server listening", "port", configs.Envs.ServerPort)
+	if err := app.Listen(":" + configs.Envs.ServerPort); err != nil {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
 	}

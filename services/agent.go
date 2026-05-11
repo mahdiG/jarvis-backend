@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"os"
 
+	"jarvis/configs"
 	"jarvis/models"
 	"jarvis/repositories"
 
@@ -45,33 +45,29 @@ type Agent struct {
 	chatModel model.BaseChatModel
 }
 
-// NewAgent creates a new Agent from environment variables.
+// NewAgent creates a new Agent from the provided LLM configuration.
 //
-// Required env vars:
-//   - LLM_API_KEY      – API key for the OpenAI-compatible provider
-//   - LLM_MODEL        – model name (e.g. "gpt-4o", "claude-sonnet-4-20250514")
+// Required fields:
+//   - LLMApiKey – API key for the OpenAI-compatible provider
+//   - LLMModel  – model name (e.g. "gpt-4o", "claude-sonnet-4-20250514")
 //
-// Optional env vars:
-//   - LLM_BASE_URL     – base URL (defaults to OpenAI's API)
-//   - LLM_MAX_TOKENS   – max completion tokens (default 4096)
-//   - LLM_TEMPERATURE  – temperature (default 0.7)
+// Optional fields:
+//   - LLMBaseURL     – base URL (defaults to OpenAI's API)
+//   - LLMMaxTokens   – max completion tokens (default 4096)
+//   - LLMTemperature – temperature (default 0.7)
 func NewAgent() (*Agent, error) {
-	apiKey := os.Getenv("LLM_API_KEY")
-	if apiKey == "" {
-		return nil, errors.New("LLM_API_KEY environment variable is required")
+	if configs.Envs.LLMApiKey == "" {
+		return nil, errors.New("LLM_API_KEY is required")
 	}
 
-	modelName := os.Getenv("LLM_MODEL")
-	if modelName == "" {
-		return nil, errors.New("LLM_MODEL environment variable is required")
+	if configs.Envs.LLMModel == "" {
+		return nil, errors.New("LLM_MODEL is required")
 	}
 
-	baseURL := os.Getenv("LLM_BASE_URL")
-
-	config := &openai.ChatModelConfig{
-		APIKey:  apiKey,
-		Model:   modelName,
-		BaseURL: baseURL,
+	openAIConfig := &openai.ChatModelConfig{
+		APIKey:  configs.Envs.LLMApiKey,
+		Model:   configs.Envs.LLMModel,
+		BaseURL: configs.Envs.LLMBaseURL,
 		// Disable thinking/reasoning mode for providers that support it (e.g. DeepSeek).
 		ExtraFields: map[string]any{
 			"thinking": map[string]any{
@@ -80,36 +76,31 @@ func NewAgent() (*Agent, error) {
 		},
 	}
 
-	if maxTokensStr := os.Getenv("LLM_MAX_TOKENS"); maxTokensStr != "" {
-		var maxTokens int
-		if err := json.Unmarshal([]byte(maxTokensStr), &maxTokens); err == nil {
-			config.MaxTokens = &maxTokens
-		}
+	if configs.Envs.LLMMaxTokens > 0 {
+		openAIConfig.MaxTokens = &configs.Envs.LLMMaxTokens
 	}
 
-	if tempStr := os.Getenv("LLM_TEMPERATURE"); tempStr != "" {
-		var temp float32
-		if err := json.Unmarshal([]byte(tempStr), &temp); err == nil {
-			config.Temperature = &temp
-		}
+	if configs.Envs.LLMTemperature > 0 {
+		temperature := float32(configs.Envs.LLMTemperature)
+		openAIConfig.Temperature = &temperature
 	}
 
-	cm, err := openai.NewChatModel(context.Background(), config)
+	chatModel, err := openai.NewChatModel(context.Background(), openAIConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	// Wrap the chat model with tool definitions so the LLM can call tools.
-	chatModel, err := einoagent.ChatModelWithTools(
-		cm,
-		cm,
+	chatModelWithTools, err := einoagent.ChatModelWithTools(
+		chatModel,
+		chatModel,
 		[]*schema.ToolInfo{createTaskToolInfo()},
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Agent{chatModel: chatModel}, nil
+	return &Agent{chatModel: chatModelWithTools}, nil
 }
 
 // Chat processes a user message and returns the agent's response.

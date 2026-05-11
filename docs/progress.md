@@ -65,3 +65,13 @@ Implement AI chat API using CloudWeGo Eino library. Added:
 - Chat controller (controllers/chat.go) with POST /v1/chat endpoint
 - create_task tool so the AI can create tasks on behalf of the user
 - Environment variables: LLM_API_KEY, LLM_MODEL, LLM_BASE_URL, LLM_MAX_TOKENS, LLM_TEMPERATURE
+
+May 11 - 09:53
+Added centralized config with Viper:
+- Created configs/env.go with typed Config struct and LoadConfig()
+- Broke DATABASE_DSN into individual DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSLMODE
+- Created .env.example documenting all env vars
+- Updated services/agent.go to accept typed LLM config struct
+- Updated configs/database.go to build DSN from config fields
+- Updated cmd/api/main.go to use configs.LoadConfig()
+- .env already in .gitignore

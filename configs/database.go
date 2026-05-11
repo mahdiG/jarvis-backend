@@ -10,9 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// NewDatabase creates a new GORM database connection and runs auto-migrations.
-func NewDatabase(dsn string) (*gorm.DB, error) {
+// NewDatabase creates a new GORM database connection from the application config
+// and runs auto-migrations.
+func NewDatabase() (*gorm.DB, error) {
 	slog.Info("connecting to database")
+
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		Envs.DatabaseHost,
+		Envs.DatabasePort,
+		Envs.DatabaseUser,
+		Envs.DatabasePassword,
+		Envs.DatabaseName,
+		Envs.DatabaseSSLMode,
+	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
