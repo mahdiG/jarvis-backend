@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 // newTestApp creates a new Fiber application with routes registered via the router package.
 func newTestApp() *fiber.App {
 	app := fiber.New()
-	router.Setup(app, TestDB)
+	router.Setup(app, TestDB, nil)
 	return app
 }
 

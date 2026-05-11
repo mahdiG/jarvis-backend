@@ -1,0 +1,1 @@
+curl -X POST http://localhost:3000/v1/chat   -H "Content-Type: application/json"   -d '{"messages": [{"role": "user", "content": "Create a task called Buy groceries with description Remember to buy milk and eggs"}]}'

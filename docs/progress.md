@@ -58,3 +58,10 @@ AI SAYS: And a content note
 This exact decision—"why I used a single recursive table instead of premature micro-categorization for my AI Life OS"—is the kind of piece that resonates deeply with senior engineers. It shows you know how to balance immediate delivery with long-term flexibility, and that you're not afraid to start simple. Write it down now, even as a paragraph in your progress log.
 
 Fighting temptations to use new shiny technologies and stay with boring mature tech that works and ships fast.
+
+May 11 - 09:20
+Implement AI chat API using CloudWeGo Eino library. Added:
+- Agent service (services/agent.go) using OpenAI-compatible LLM with tool calling
+- Chat controller (controllers/chat.go) with POST /v1/chat endpoint
+- create_task tool so the AI can create tasks on behalf of the user
+- Environment variables: LLM_API_KEY, LLM_MODEL, LLM_BASE_URL, LLM_MAX_TOKENS, LLM_TEMPERATURE

@@ -7,6 +7,7 @@ import (
 	"jarvis/configs"
 	"jarvis/repositories"
 	"jarvis/router"
+	"jarvis/services"
 	"jarvis/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,7 +40,14 @@ func main() {
 
 	app := fiber.New()
 
-	router.Setup(app, db)
+	// Initialize the AI agent.
+	agent, err := services.NewAgent()
+	if err != nil {
+		slog.Error("failed to initialize AI agent", "error", err)
+		os.Exit(1)
+	}
+
+	router.Setup(app, db, agent)
 
 	slog.Info("server listening", "port", port)
 	if err := app.Listen(":" + port); err != nil {
