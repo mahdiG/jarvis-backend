@@ -6,8 +6,8 @@ Agents should use their tool functions when needed and prefer it over running sh
 
 ## Source of truth docs (read first)
 
-- **Code guidelines (mandatory)**: `docs/CODE_GUIDELINES.md`
-- **Vision / product direction**: `docs/JARVIS_LIFE_OS_VISION.md`
+- **Code guidelines (mandatory)**: `docs/CODE-GUIDELINES.md`
+- **Vision / product direction**: `docs/JARVIS-LIFE-OS-VISION.md`
 - **Progress / current focus**: `docs/progress.md`
 
 If there is any conflict, follow **`docs/CODE_GUIDELINES.md`** for coding standards and ask for clarification only if requirements are truly ambiguous.
@@ -33,8 +33,8 @@ If the user gives feedback like:
 
 Default behavior:
 
-- Update `docs/CODE_GUIDELINES.md` for coding/process rules.
-- Update `docs/JARVIS_LIFE_OS_VISION.md` for product principles and direction.
+- Update `docs/CODE-GUIDELINES.md` for coding/process rules.
+- Update `docs/JARVIS-LIFE-OS-VISION.md` for product principles and direction.
 
 ## Documenting learned facts (required)
 
@@ -50,7 +50,7 @@ Types of facts to document:
 Default behavior:
 
 - Update `AGENTS.md` for agent-specific rules, workflow tips, and cross-cutting conventions.
-- Update `docs/CODE_GUIDELINES.md` for coding standards, patterns, or style rules.
+- Update `docs/CODE-GUIDELINES.md` for coding standards, patterns, or style rules.
 - Update `docs/progress.md` for notable changes in project state or direction.
 
 When in doubt, add the fact to `AGENTS.md` rather than leaving it undocumented. A short note beats tribal knowledge.
