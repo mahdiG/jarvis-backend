@@ -15,8 +15,8 @@ type ChatRequest struct {
 	Messages []agent.Message `validate:"required,min=1"`
 }
 
-// GetChatMessage handles the chat endpoint.
-func GetChatMessage(c *fiber.Ctx) error {
+// SendChatMessage handles the chat endpoint.
+func SendChatMessage(c *fiber.Ctx) error {
 	var request ChatRequest
 
 	if !Validate(c, &request) {
