@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 var validate = validator.New()
@@ -17,8 +17,8 @@ var validate = validator.New()
 //	if !Validate(c, &req) {
 //	    return nil
 //	}
-func Validate[T any](c *fiber.Ctx, target *T) bool {
-	err := c.BodyParser(target)
+func Validate[T any](c fiber.Ctx, target *T) bool {
+	err := c.Bind().Body(target)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",

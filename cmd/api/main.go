@@ -10,7 +10,7 @@ import (
 	"jarvis/router"
 	"jarvis/utils"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func main() {

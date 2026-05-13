@@ -8,14 +8,21 @@ import (
 	"jarvis/models"
 	"jarvis/repositories"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 // --------------------------------------------------------------------------
 // Conversation CRUD
 // --------------------------------------------------------------------------
 
-func GetConversations(c *fiber.Ctx) error {
+// GetConversations returns all conversations
+// @Summary      List all conversations
+// @Tags         Conversations
+// @Produce      json
+// @Success      200  {array}   models.Conversation
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations [get]
+func GetConversations(c fiber.Ctx) error {
 	conversations, err := repositories.GetConversations(0, 0)
 	if err != nil {
 		slog.Error("failed to get conversations", "error", err)
@@ -27,7 +34,16 @@ func GetConversations(c *fiber.Ctx) error {
 	return c.JSON(conversations)
 }
 
-func GetConversation(c *fiber.Ctx) error {
+// GetConversation returns a single conversation by its ID
+// @Summary      Get a conversation
+// @Tags         Conversations
+// @Produce      json
+// @Param        id   path      string  true  "Conversation ID"
+// @Success      200  {object}  models.Conversation
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations/{id} [get]
+func GetConversation(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	conversation, err := repositories.GetConversation(models.Conversation{Base: models.Base{ID: models.UID(id)}})
@@ -47,7 +63,17 @@ func GetConversation(c *fiber.Ctx) error {
 	return c.JSON(conversation)
 }
 
-func CreateConversation(c *fiber.Ctx) error {
+// CreateConversation creates a new conversation
+// @Summary      Create a conversation
+// @Tags         Conversations
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.Conversation  true  "Conversation to create"
+// @Success      201  {object}  models.Conversation
+// @Failure      400  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations [post]
+func CreateConversation(c fiber.Ctx) error {
 	var conversation models.Conversation
 
 	if !Validate(c, &conversation) {
@@ -65,7 +91,19 @@ func CreateConversation(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(conversation)
 }
 
-func UpdateConversation(c *fiber.Ctx) error {
+// UpdateConversation updates an existing conversation (partial update)
+// @Summary      Update a conversation
+// @Tags         Conversations
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string               true  "Conversation ID"
+// @Param        body  body      models.Conversation  true  "Updated conversation fields"
+// @Success      200  {object}  models.Conversation
+// @Failure      400  {object}  fiber.Map
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations/{id} [patch]
+func UpdateConversation(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	var input models.Conversation
@@ -92,7 +130,16 @@ func UpdateConversation(c *fiber.Ctx) error {
 	return c.JSON(conversation)
 }
 
-func DeleteConversation(c *fiber.Ctx) error {
+// DeleteConversation deletes a conversation by its ID
+// @Summary      Delete a conversation
+// @Tags         Conversations
+// @Produce      json
+// @Param        id   path      string  true  "Conversation ID"
+// @Success      204  {object}  fiber.Map
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations/{id} [delete]
+func DeleteConversation(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	err := repositories.DeleteConversation(models.Conversation{Base: models.Base{ID: models.UID(id)}})
@@ -117,7 +164,15 @@ func DeleteConversation(c *fiber.Ctx) error {
 // --------------------------------------------------------------------------
 
 // GetMessages returns all messages for a conversation, ordered by creation time.
-func GetMessages(c *fiber.Ctx) error {
+// @Summary      List messages in a conversation
+// @Tags         Messages
+// @Produce      json
+// @Param        id  path      string  true  "Conversation ID"
+// @Success      200  {array}  models.Message
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations/{id}/messages [get]
+func GetMessages(c fiber.Ctx) error {
 	conversationID := c.Params("id")
 
 	// Verify the conversation exists.
@@ -148,7 +203,18 @@ func GetMessages(c *fiber.Ctx) error {
 // SendMessage handles posting a user message to a conversation.
 // It saves the user message, calls the AI agent with the full conversation
 // history, saves the assistant response, and returns both messages.
-func SendMessage(c *fiber.Ctx) error {
+// @Summary      Send a message to a conversation
+// @Tags         Messages
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string         true  "Conversation ID"
+// @Param        body  body      models.Message  true  "User message (content field)"
+// @Success      201  {object}  fiber.Map  "Returns { user: Message, assistant: Message }"
+// @Failure      400  {object}  fiber.Map
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /conversations/{id}/messages [post]
+func SendMessage(c fiber.Ctx) error {
 	conversationID := c.Params("id")
 
 	// Verify the conversation exists.

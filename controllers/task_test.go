@@ -10,7 +10,7 @@ import (
 	"jarvis/repositories"
 	"jarvis/router"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

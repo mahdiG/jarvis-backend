@@ -7,10 +7,17 @@ import (
 	"jarvis/models"
 	"jarvis/repositories"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
-func GetTasks(c *fiber.Ctx) error {
+// GetTasks returns all tasks
+// @Summary      List all tasks
+// @Tags         Tasks
+// @Produce      json
+// @Success      200  {array}   models.Task
+// @Failure      500  {object}  fiber.Map
+// @Router       /tasks [get]
+func GetTasks(c fiber.Ctx) error {
 	tasks, err := repositories.GetTasks(0, 0)
 	if err != nil {
 		slog.Error("failed to get tasks", "error", err)
@@ -23,7 +30,16 @@ func GetTasks(c *fiber.Ctx) error {
 	return c.JSON(tasks)
 }
 
-func GetTask(c *fiber.Ctx) error {
+// GetTask returns a single task by its ID
+// @Summary      Get a task
+// @Tags         Tasks
+// @Produce      json
+// @Param        id   path      string  true  "Task ID"
+// @Success      200  {object}  models.Task
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /tasks/{id} [get]
+func GetTask(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	task, err := repositories.GetTask(models.Task{Base: models.Base{ID: models.UID(id)}})
@@ -44,7 +60,17 @@ func GetTask(c *fiber.Ctx) error {
 	return c.JSON(task)
 }
 
-func CreateTask(c *fiber.Ctx) error {
+// CreateTask creates a new task
+// @Summary      Create a task
+// @Tags         Tasks
+// @Accept       json
+// @Produce      json
+// @Param        body  body      models.Task  true  "Task to create"
+// @Success      201  {object}  models.Task
+// @Failure      400  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /tasks [post]
+func CreateTask(c fiber.Ctx) error {
 	var task models.Task
 
 	if !Validate(c, &task) {
@@ -62,7 +88,19 @@ func CreateTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(task)
 }
 
-func UpdateTask(c *fiber.Ctx) error {
+// UpdateTask updates an existing task (partial update)
+// @Summary      Update a task
+// @Tags         Tasks
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string       true  "Task ID"
+// @Param        body  body      models.Task  true  "Updated task fields"
+// @Success      200  {object}  models.Task
+// @Failure      400  {object}  fiber.Map
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /tasks/{id} [patch]
+func UpdateTask(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	var input models.Task
@@ -89,7 +127,16 @@ func UpdateTask(c *fiber.Ctx) error {
 	return c.JSON(task)
 }
 
-func DeleteTask(c *fiber.Ctx) error {
+// DeleteTask deletes a task by its ID
+// @Summary      Delete a task
+// @Tags         Tasks
+// @Produce      json
+// @Param        id   path      string  true  "Task ID"
+// @Success      204  {object}  fiber.Map
+// @Failure      404  {object}  fiber.Map
+// @Failure      500  {object}  fiber.Map
+// @Router       /tasks/{id} [delete]
+func DeleteTask(c fiber.Ctx) error {
 	id := c.Params("id")
 
 	err := repositories.DeleteTask(models.Task{Base: models.Base{ID: models.UID(id)}})

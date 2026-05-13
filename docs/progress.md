@@ -31,10 +31,8 @@ Add localization, make event timeline page functional. AI struggle a little with
 May 8 - 00:00
 add settings store (lit signal). Also set/get locale to/from localstorage
 
-
 May 9 - 18:00
 Setup golang backend project structure
-
 
 May 10 - 13:02
 Think about database schema.
@@ -42,16 +40,16 @@ What I want: Value/Wish/Identity (Musician) -> Goals (roadmaps) -> tasks
 But I don't want to design 10 layers of subtasks. Maybe with a flat/infinite system I can just use infinite subtasks:
 
 type Task struct {
-    ID          uint           `gorm:"primaryKey"`
-    Title       string
-    Description string
-    ParentID    *uint
-    Status      string         // active, done, archived
-    Type        string         // "value", "goal", "roadmap", "task", "habit"
-    ScheduledFor *time.Time
-    Metadata    datatypes.JSON `gorm:"type:json"` // e.g., {"ai_breakdown": [...], "score": 0.7}
-    CreatedAt   time.Time
-    UpdatedAt   time.Time
+ID uint `gorm:"primaryKey"`
+Title string
+Description string
+ParentID *uint
+Status string // active, done, archived
+Type string // "value", "goal", "roadmap", "task", "habit"
+ScheduledFor *time.Time
+Metadata datatypes.JSON `gorm:"type:json"` // e.g., {"ai_breakdown": [...], "score": 0.7}
+CreatedAt time.Time
+UpdatedAt time.Time
 }
 
 AI SAYS: And a content note
@@ -61,6 +59,7 @@ Fighting temptations to use new shiny technologies and stay with boring mature t
 
 May 11 - 09:20
 Implement AI chat API using CloudWeGo Eino library. Added:
+
 - Agent service (services/agent.go) using OpenAI-compatible LLM with tool calling
 - Chat controller (controllers/chat.go) with POST /v1/chat endpoint
 - create_task tool so the AI can create tasks on behalf of the user
@@ -68,6 +67,7 @@ Implement AI chat API using CloudWeGo Eino library. Added:
 
 May 11 - 09:53
 Added centralized config with Viper:
+
 - Created configs/env.go with typed Config struct and LoadConfig()
 - Broke DATABASE_DSN into individual DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSLMODE
 - Created .env.example documenting all env vars
@@ -75,7 +75,6 @@ Added centralized config with Viper:
 - Updated configs/database.go to build DSN from config fields
 - Updated cmd/api/main.go to use configs.LoadConfig()
 - .env already in .gitignore
-
 
 May 11 - 13:37
 Fixed "Invalid schema for function 'create_task': schema must be a JSON Schema of 'type: \"object\"', got 'type: null'" error.
@@ -85,3 +84,18 @@ Also improved error tracing: wrapped `chatModel.Generate` errors with `fmt.Error
 
 May 11 - 14:49
 Fixed multi-turn tool calling in agent/Chat(): the previous code only supported one round of tool execution — it processed the first batch of tool calls, made a single follow-up LLM call, and only used its text content, discarding any follow-up tool calls (e.g. creating a child task after a parent). Fix: wrapped the generate→process cycle in a `for` loop that continues feeding tool results back until the LLM responds with text only.
+
+May 13 - 09:00
+Added Conversations & Messages API for a ChatGPT-like chat UI:
+
+- Models: Conversation (title) and Message (conversationId, role, content)
+- Repositories with full CRUD for conversations, create & list for messages
+- Controllers under /v1/conversations with nested /messages routes
+- SendMessage endpoint integrates with the AI agent, returns both user + assistant messages
+- Old controllers/chat.go removed (replaced by conversation flow)
+- OpenAPI spec at api/openapi.json, served at GET /v1/swagger/doc.json
+- 22 tests pass (14 conversation/message + 8 existing task)
+  </replace_in_file>
+
+May 13 - 10:00
+Replace openAPI with swaggo (has dashboard). Upgrade fiber to version 3 (I thought we were on the latest version already!)
