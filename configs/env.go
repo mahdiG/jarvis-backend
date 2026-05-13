@@ -14,6 +14,7 @@ type EnvsConfig struct {
 	// General
 	ServerPort          string `mapstructure:"SERVER_PORT"`
 	IsStackTraceEnabled bool   `mapstructure:"IS_STACK_TRACE_ENABLED"`
+	CORSAllowedOrigins  string `mapstructure:"CORS_ALLOWED_ORIGINS"`
 
 	// Database
 	DatabaseHost     string `mapstructure:"DB_HOST"`
@@ -65,6 +66,9 @@ func LoadConfig() error {
 	}
 	if Envs.ServerPort == "" {
 		Envs.ServerPort = "3000"
+	}
+	if Envs.CORSAllowedOrigins == "" {
+		Envs.CORSAllowedOrigins = "*"
 	}
 
 	return nil
