@@ -18,7 +18,15 @@ func Setup(app *fiber.App) {
 	tasks.Patch("/:id", controllers.UpdateTask)
 	tasks.Delete("/:id", controllers.DeleteTask)
 
-	chat := v1.Group("/chat")
-	chat.Post("/", controllers.SendChatMessage)
+	conversations := v1.Group("/conversations")
+	conversations.Get("/", controllers.GetConversations)
+	conversations.Post("/", controllers.CreateConversation)
+	conversations.Get("/:id", controllers.GetConversation)
+	conversations.Patch("/:id", controllers.UpdateConversation)
+	conversations.Delete("/:id", controllers.DeleteConversation)
+
+	messages := conversations.Group("/:id/messages")
+	messages.Get("/", controllers.GetMessages)
+	messages.Post("/", controllers.SendMessage)
 
 }
