@@ -47,7 +47,13 @@ func Init() error {
 	chatModelWithTools, err := einoagent.ChatModelWithTools(
 		openaiCompatibleChatModel,
 		openaiCompatibleChatModel,
-		[]*schema.ToolInfo{getToolInfoCreateTask()},
+		[]*schema.ToolInfo{
+			getToolInfoCreateTask(),
+			getToolInfoGetTasks(),
+			getToolInfoGetTask(),
+			getToolInfoUpdateTask(),
+			getToolInfoDeleteTask(),
+		},
 	)
 	if err != nil {
 		return utils.WrapError(err)
@@ -129,6 +135,14 @@ func executeTool(ctx context.Context, toolCall schema.ToolCall) (string, error) 
 	switch toolCall.Function.Name {
 	case toolNameCreateTask:
 		return executeToolCreateTask(ctx, toolCall.Function.Arguments)
+	case toolNameGetTasks:
+		return executeToolGetTasks(ctx, toolCall.Function.Arguments)
+	case toolNameGetTask:
+		return executeToolGetTask(ctx, toolCall.Function.Arguments)
+	case toolNameUpdateTask:
+		return executeToolUpdateTask(ctx, toolCall.Function.Arguments)
+	case toolNameDeleteTask:
+		return executeToolDeleteTask(ctx, toolCall.Function.Arguments)
 	default:
 		return "", utils.WrapError(errors.New("unknown tool: " + toolCall.Function.Name))
 	}
@@ -165,8 +179,10 @@ func buildOpenAIConfig() *openai.ChatModelConfig {
 // It always prepends a system prompt before the conversation history.
 func convertMessagesToSchemaMessages(history []Message) []*schema.Message {
 	systemPrompt := "You are an AI assistant for a task management system called Jarvis. " +
-		"You can help users manage their tasks. When a user asks to create a task, " +
-		"use the create_task tool to create it."
+		"You can help users manage their tasks. You have the following tools available: " +
+		"create_task (create a new task), get_tasks (list all tasks), " +
+		"get_task (get a single task by ID), update_task (update an existing task), " +
+		"delete_task (delete a task by ID)."
 
 	messages := make([]*schema.Message, 0, len(history)+1)
 	messages = append(messages, schema.SystemMessage(systemPrompt))

@@ -1,8 +1,12 @@
-curl -X POST http://localhost:3000/v1/chat   -H "Content-Type: application/json"   -d '{"messages": [{"role": "user", "content": "Create a task called Buy groceries with description Remember to buy milk and eggs"}]}'
+curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "Create a task called Buy groceries with description Remember to buy milk and eggs"}]}'
 
-artifex@flow:~/code/jarvis/jarvis-backend$ curl -X POST http://localhost:3000/v1/chat   -H "Content-Type: application/json"   -d '{"messages": [{"role": "user", "content": "Create task parentA and task childA thats a
- child of parentA"}]}'
+artifex@flow:~/code/jarvis/jarvis-backend$ curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "Create task parentA and task childA thats a
+child of parentA"}]}'
 {"reply":"I've created both tasks:\n\n1. **parentA** (ID: iijmbxkkls) - Parent task\n2. **childA** (ID: rtiyhaawgb) - Child task of parentA\n\nHowever, I noticed that the system currently doesn't support setting a `ParentID` relationship when creating a task (the `create_task` tool only accepts `title` and `description` parameters). As a result, **childA** was created without an explicit parent relationship to **parentA**.\n\nIf you have another way to assign childA as a child of parentA (e.g., through an update/editing feature), please let me know!","actions":[{"tool":"create_task","result":"{\"ID\":\"iijmbxkkls\",\"CreatedAt\":\"2026-05-11T11:51:28.360630967+03:30\",\"UpdatedAt\":\"2026-05-11T11:51:28.360630967+03:30\",\"DeletedAt\":null,\"Title\":\"parentA\",\"Description\":\"Parent task\",\"ParentID\":\"\"}","detail":{"description":"Parent task","title":"parentA"}},{"tool":"create_task","result":"{\"ID\":\"rtiyhaawgb\",\"CreatedAt\":\"2026-05-11T11:51:28.368690598+03:30\",\"UpdatedAt\":\"2026-05-11T11:51:28.368690598+03:30\",\"DeletedAt\":null,\"Title\":\"childA\",\"Description\":\"Child task of parentA\",\"ParentID\":\"\"}","detail":{"description":"Child task of parentA","title":"childA"}}]}artifex@f
-artifex@flow:~/code/jarvis/jarvis-backend$ 
+artifex@flow:~/code/jarvis/jarvis-backend$
 
+curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "create step-by-step tasks for making a great AI Life OS. Max tasks of 20"}]}'
 
+curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "list my first 3 tasks"}]}'
+
+curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "create task to Play Flute"}]}'

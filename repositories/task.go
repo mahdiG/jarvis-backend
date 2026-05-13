@@ -6,21 +6,27 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func GetTasks() ([]models.Task, error) {
+func GetTasks(limit, offset int) ([]models.Task, error) {
 	var tasks []models.Task
 
-	result := db.
-		Find(&tasks)
+	query := db.Model(&models.Task{})
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+	result := query.Find(&tasks)
 
 	return tasks, result.Error
 }
 
-func GetTask(id models.UID) (models.Task, error) {
+func GetTask(condition models.Task) (models.Task, error) {
 	var task models.Task
 
 	result := db.
 		Clauses(clause.Returning{}).
-		Where(models.Task{Base: models.Base{ID: id}}).
+		Where(&condition).
 		First(&task)
 
 	return task, result.Error
@@ -46,9 +52,9 @@ func UpdateTask(task models.Task) (models.Task, error) {
 	return task, nil
 }
 
-func DeleteTask(id models.UID) error {
+func DeleteTask(condition models.Task) error {
 	result := db.
-		Where(models.Task{Base: models.Base{ID: id}}).
+		Where(&condition).
 		Delete(&models.Task{})
 
 	if result.Error != nil {

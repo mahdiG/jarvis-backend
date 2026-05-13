@@ -421,7 +421,7 @@ func TestDeleteTask_Success(t *testing.T) {
 	}
 
 	// Verify the task is actually gone.
-	_, err = repositories.GetTask(original.ID)
+	_, err = repositories.GetTask(models.Task{Base: models.Base{ID: original.ID}})
 	if err == nil {
 		t.Error("expected error fetching deleted task, got nil")
 	}

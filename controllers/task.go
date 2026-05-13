@@ -11,7 +11,7 @@ import (
 )
 
 func GetTasks(c *fiber.Ctx) error {
-	tasks, err := repositories.GetTasks()
+	tasks, err := repositories.GetTasks(0, 0)
 	if err != nil {
 		slog.Error("failed to get tasks", "error", err)
 
@@ -26,7 +26,7 @@ func GetTasks(c *fiber.Ctx) error {
 func GetTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	task, err := repositories.GetTask(models.UID(id))
+	task, err := repositories.GetTask(models.Task{Base: models.Base{ID: models.UID(id)}})
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -92,7 +92,7 @@ func UpdateTask(c *fiber.Ctx) error {
 func DeleteTask(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	err := repositories.DeleteTask(models.UID(id))
+	err := repositories.DeleteTask(models.Task{Base: models.Base{ID: models.UID(id)}})
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

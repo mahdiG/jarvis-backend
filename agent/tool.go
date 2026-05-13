@@ -17,13 +17,17 @@ import (
 // Tool names exposed to the LLM.
 const (
 	toolNameCreateTask = "create_task"
+	toolNameGetTasks   = "get_tasks"
+	toolNameGetTask    = "get_task"
+	toolNameUpdateTask = "update_task"
+	toolNameDeleteTask = "delete_task"
 )
 
 // toolSchemaFromModel generates an Eino ParamsOneOf by reflecting a model struct
-// and stripping fields inherited from models.Base (ID, timestamps, soft-delete).
-// This lets us reuse the model type as the tool argument schema without exposing
-// auto-generated fields to the LLM.
-func getToolSchemaFromModel[Model any]() *schema.ParamsOneOf {
+// and optionally stripping fields inherited from models.Base (ID, timestamps, soft-delete).
+// When shouldExcludeBase is true, auto-generated fields are removed from the schema
+// so the LLM does not provide them. When false, all fields (including ID) are exposed.
+func getToolSchemaFromModel[Model any](shouldExcludeBase bool) *schema.ParamsOneOf {
 	var model Model
 	modelType := reflect.TypeOf(model)
 
@@ -36,19 +40,21 @@ func getToolSchemaFromModel[Model any]() *schema.ParamsOneOf {
 		ExpandedStruct: true,
 	}
 
-	// At the root level, remove fields that come from Base since they are
-	// auto-generated or ignored at creation time.
-	reflector.SchemaModifier = func(
-		jsonFieldName string,
-		structType reflect.Type,
-		structTag reflect.StructTag,
-		propertySchema *jsonschema.Schema,
-	) {
-		if jsonFieldName != "_root" {
-			return
-		}
-		for _, baseFieldName := range basePropertyNames {
-			propertySchema.Properties.Delete(baseFieldName)
+	if shouldExcludeBase {
+		// At the root level, remove fields that come from Base since they are
+		// auto-generated or ignored at creation time.
+		reflector.SchemaModifier = func(
+			jsonFieldName string,
+			structType reflect.Type,
+			structTag reflect.StructTag,
+			propertySchema *jsonschema.Schema,
+		) {
+			if jsonFieldName != "_root" {
+				return
+			}
+			for _, baseFieldName := range basePropertyNames {
+				propertySchema.Properties.Delete(baseFieldName)
+			}
 		}
 	}
 
@@ -76,7 +82,54 @@ func getToolInfoCreateTask() *schema.ToolInfo {
 		Name: toolNameCreateTask,
 		Desc: "Create a new task in the task management system. " +
 			"Use this when the user asks to create, add, or make a task or todo",
-		ParamsOneOf: getToolSchemaFromModel[models.Task](),
+		ParamsOneOf: getToolSchemaFromModel[models.Task](true),
+	}
+}
+
+// getToolInfoGetTasks returns the ToolInfo for the get_tasks tool.
+func getToolInfoGetTasks() *schema.ToolInfo {
+	return &schema.ToolInfo{
+		Name: toolNameGetTasks,
+		Desc: "Get tasks. Use limit=0 to return all tasks, or limit=N to return the first N tasks. " +
+			"Use offset for pagination (e.g. offset=3 skips the first 3 tasks).",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"limit": {
+				Desc:     "Maximum number of tasks to return. 0 returns all tasks.",
+				Type:     schema.Integer,
+				Required: true,
+			},
+			"offset": {
+				Desc: "Number of tasks to skip before returning results. 0 or omitted starts from the beginning.",
+				Type: schema.Integer,
+			},
+		}),
+	}
+}
+
+// getToolInfoGetTask returns the ToolInfo for the get_task tool.
+func getToolInfoGetTask() *schema.ToolInfo {
+	return &schema.ToolInfo{
+		Name:        toolNameGetTask,
+		Desc:        "Get a single task by its ID. Use this when the user asks to get, fetch, or retrieve a specific task",
+		ParamsOneOf: getToolSchemaFromModel[models.Task](false),
+	}
+}
+
+// getToolInfoUpdateTask returns the ToolInfo for the update_task tool.
+func getToolInfoUpdateTask() *schema.ToolInfo {
+	return &schema.ToolInfo{
+		Name:        toolNameUpdateTask,
+		Desc:        "Update an existing task. Use this when the user asks to update, edit, or modify a task",
+		ParamsOneOf: getToolSchemaFromModel[models.Task](false),
+	}
+}
+
+// getToolInfoDeleteTask returns the ToolInfo for the delete_task tool.
+func getToolInfoDeleteTask() *schema.ToolInfo {
+	return &schema.ToolInfo{
+		Name:        toolNameDeleteTask,
+		Desc:        "Delete a task by its ID. Use this when the user asks to delete, remove, or archive a task",
+		ParamsOneOf: getToolSchemaFromModel[models.Task](false),
 	}
 }
 
@@ -84,7 +137,8 @@ func getToolInfoCreateTask() *schema.ToolInfo {
 // repository, and returns the JSON-encoded result.
 func executeToolCreateTask(_ context.Context, argumentsJSON string) (string, error) {
 	var task models.Task
-	if err := json.Unmarshal([]byte(argumentsJSON), &task); err != nil {
+	err := json.Unmarshal([]byte(argumentsJSON), &task)
+	if err != nil {
 		return "", utils.WrapError(err)
 	}
 
@@ -102,4 +156,100 @@ func executeToolCreateTask(_ context.Context, argumentsJSON string) (string, err
 		return "", utils.WrapError(marshalError)
 	}
 	return string(result), nil
+}
+
+// executeToolGetTasks returns tasks as a JSON-encoded array, with optional
+// limit/offset for pagination.
+func executeToolGetTasks(_ context.Context, argumentsJSON string) (string, error) {
+	var params struct {
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+	}
+	if argumentsJSON != "" {
+		if err := json.Unmarshal([]byte(argumentsJSON), &params); err != nil {
+			return "", utils.WrapError(err)
+		}
+	}
+
+	tasks, err := repositories.GetTasks(params.Limit, params.Offset)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	result, marshalError := json.Marshal(tasks)
+	if marshalError != nil {
+		return "", utils.WrapError(marshalError)
+	}
+	return string(result), nil
+}
+
+// executeToolGetTask parses the tool arguments, retrieves a single task by ID,
+// and returns the JSON-encoded result.
+func executeToolGetTask(_ context.Context, argumentsJSON string) (string, error) {
+	var condition models.Task
+	err := json.Unmarshal([]byte(argumentsJSON), &condition)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	if condition.ID == "" {
+		return "", utils.WrapError(errors.New("task ID is required"))
+	}
+
+	task, err := repositories.GetTask(condition)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	result, marshalError := json.Marshal(task)
+	if marshalError != nil {
+		return "", utils.WrapError(marshalError)
+	}
+	return string(result), nil
+}
+
+// executeToolUpdateTask parses the tool arguments, updates a task via the
+// repository, and returns the JSON-encoded result.
+func executeToolUpdateTask(_ context.Context, argumentsJSON string) (string, error) {
+	var task models.Task
+	err := json.Unmarshal([]byte(argumentsJSON), &task)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	if task.ID == "" {
+		return "", utils.WrapError(errors.New("task ID is required for update"))
+	}
+
+	updated, err := repositories.UpdateTask(task)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	result, marshalError := json.Marshal(updated)
+	if marshalError != nil {
+		return "", utils.WrapError(marshalError)
+	}
+	return string(result), nil
+}
+
+// executeToolDeleteTask parses the tool arguments, deletes a task by ID,
+// and returns a success message.
+func executeToolDeleteTask(_ context.Context, argumentsJSON string) (string, error) {
+	var condition models.Task
+	err := json.Unmarshal([]byte(argumentsJSON), &condition)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	if condition.ID == "" {
+		return "", utils.WrapError(errors.New("task ID is required for deletion"))
+	}
+
+	err = repositories.DeleteTask(condition)
+	if err != nil {
+		return "", utils.WrapError(err)
+	}
+
+	return "task deleted successfully", nil
 }
