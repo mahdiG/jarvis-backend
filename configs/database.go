@@ -36,6 +36,7 @@ func NewDatabase() (*gorm.DB, error) {
 		&models.Task{},
 		&models.Conversation{},
 		&models.Message{},
+		&models.Tag{},
 	)
 
 	if err != nil {

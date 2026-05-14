@@ -16,7 +16,7 @@ definitions:
       createdAt:
         type: string
       deletedAt:
-        $ref: "#/definitions/gorm.DeletedAt"
+        $ref: '#/definitions/gorm.DeletedAt'
       id:
         type: string
       title:
@@ -24,7 +24,7 @@ definitions:
       updatedAt:
         type: string
     required:
-      - title
+    - title
     type: object
   models.Message:
     properties:
@@ -35,7 +35,7 @@ definitions:
       createdAt:
         type: string
       deletedAt:
-        $ref: "#/definitions/gorm.DeletedAt"
+        $ref: '#/definitions/gorm.DeletedAt'
       id:
         type: string
       role:
@@ -43,28 +43,61 @@ definitions:
       updatedAt:
         type: string
     required:
-      - content
-      - conversationID
-      - role
+    - content
+    - conversationID
+    - role
+    type: object
+  models.Tag:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      name:
+        type: string
+      updatedAt:
+        type: string
+    required:
+    - name
     type: object
   models.Task:
     properties:
       createdAt:
         type: string
       deletedAt:
-        $ref: "#/definitions/gorm.DeletedAt"
+        $ref: '#/definitions/gorm.DeletedAt'
       description:
+        type: string
+      doneAt:
         type: string
       id:
         type: string
       parentID:
         type: string
+      scheduledFrom:
+        type: string
+      scheduledTo:
+        type: string
+      score:
+        type: number
+      scoreUnit:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/models.Tag'
+        type: array
+      targetScore:
+        description: Target score for binary (done/undone) task is 1
+        minimum: 0
+        type: number
       title:
         type: string
       updatedAt:
         type: string
     required:
-      - title
+    - title
     type: object
 host: localhost:3000
 info:
@@ -77,334 +110,334 @@ paths:
   /conversations:
     get:
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: "#/definitions/models.Conversation"
+              $ref: '#/definitions/models.Conversation'
             type: array
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: List all conversations
       tags:
-        - Conversations
+      - Conversations
     post:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Conversation to create
-          in: body
-          name: body
-          required: true
-          schema:
-            $ref: "#/definitions/models.Conversation"
+      - description: Conversation to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Conversation'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: "#/definitions/models.Conversation"
+            $ref: '#/definitions/models.Conversation'
         "400":
           description: Bad Request
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Create a conversation
       tags:
-        - Conversations
+      - Conversations
   /conversations/{id}:
     delete:
       parameters:
-        - description: Conversation ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "204":
           description: No Content
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Delete a conversation
       tags:
-        - Conversations
+      - Conversations
     get:
       parameters:
-        - description: Conversation ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.Conversation"
+            $ref: '#/definitions/models.Conversation'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Get a conversation
       tags:
-        - Conversations
+      - Conversations
     patch:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Conversation ID
-          in: path
-          name: id
-          required: true
-          type: string
-        - description: Updated conversation fields
-          in: body
-          name: body
-          required: true
-          schema:
-            $ref: "#/definitions/models.Conversation"
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated conversation fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Conversation'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.Conversation"
+            $ref: '#/definitions/models.Conversation'
         "400":
           description: Bad Request
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Update a conversation
       tags:
-        - Conversations
+      - Conversations
   /conversations/{id}/messages:
     get:
       parameters:
-        - description: Conversation ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: "#/definitions/models.Message"
+              $ref: '#/definitions/models.Message'
             type: array
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: List messages in a conversation
       tags:
-        - Messages
+      - Messages
     post:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Conversation ID
-          in: path
-          name: id
-          required: true
-          type: string
-        - description: User message (content field)
-          in: body
-          name: body
-          required: true
-          schema:
-            $ref: "#/definitions/models.Message"
+      - description: Conversation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User message (content field)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Message'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
-          description: "Returns { user: Message, assistant: Message }"
+          description: 'Returns { user: Message, assistant: Message }'
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "400":
           description: Bad Request
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Send a message to a conversation
       tags:
-        - Messages
+      - Messages
   /tasks:
     get:
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: "#/definitions/models.Task"
+              $ref: '#/definitions/models.Task'
             type: array
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: List all tasks
       tags:
-        - Tasks
+      - Tasks
     post:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Task to create
-          in: body
-          name: body
-          required: true
-          schema:
-            $ref: "#/definitions/models.Task"
+      - description: Task to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Task'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: "#/definitions/models.Task"
+            $ref: '#/definitions/models.Task'
         "400":
           description: Bad Request
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Create a task
       tags:
-        - Tasks
+      - Tasks
   /tasks/{id}:
     delete:
       parameters:
-        - description: Task ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "204":
           description: No Content
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Delete a task
       tags:
-        - Tasks
+      - Tasks
     get:
       parameters:
-        - description: Task ID
-          in: path
-          name: id
-          required: true
-          type: string
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.Task"
+            $ref: '#/definitions/models.Task'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Get a task
       tags:
-        - Tasks
+      - Tasks
     patch:
       consumes:
-        - application/json
+      - application/json
       parameters:
-        - description: Task ID
-          in: path
-          name: id
-          required: true
-          type: string
-        - description: Updated task fields
-          in: body
-          name: body
-          required: true
-          schema:
-            $ref: "#/definitions/models.Task"
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated task fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Task'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: "#/definitions/models.Task"
+            $ref: '#/definitions/models.Task'
         "400":
           description: Bad Request
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "404":
           description: Not Found
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
         "500":
           description: Internal Server Error
           schema:
-            $ref: "#/definitions/fiber.Map"
+            $ref: '#/definitions/fiber.Map'
       summary: Update a task
       tags:
-        - Tasks
+      - Tasks
 swagger: "2.0"

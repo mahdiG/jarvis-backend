@@ -81,7 +81,9 @@ func getToolInfoCreateTask() *schema.ToolInfo {
 	return &schema.ToolInfo{
 		Name: toolNameCreateTask,
 		Desc: "Create a new task in the task management system. " +
-			"Use this when the user asks to create, add, or make a task or todo",
+			"Use this when the user asks to create, add, or make a task or todo. " +
+			"Supports scheduling (ScheduledFrom/ScheduledTo), scoring (TargetScore/Score/ScoreUnit), " +
+			"parent tasking (ParentID), and tagging (Tags).",
 		ParamsOneOf: getToolSchemaFromModel[models.Task](true),
 	}
 }
@@ -119,7 +121,9 @@ func getToolInfoGetTask() *schema.ToolInfo {
 func getToolInfoUpdateTask() *schema.ToolInfo {
 	return &schema.ToolInfo{
 		Name:        toolNameUpdateTask,
-		Desc:        "Update an existing task. Use this when the user asks to update, edit, or modify a task",
+		Desc:        "Update an existing task. Use this when the user asks to update, edit, or modify a task. " +
+			"Supports marking as done (DoneAt), adjusting score/progress (Score/TargetScore), " +
+			"rescheduling (ScheduledFrom/ScheduledTo), and updating tags (Tags).",
 		ParamsOneOf: getToolSchemaFromModel[models.Task](false),
 	}
 }

@@ -598,6 +598,29 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Tag": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Task": {
             "type": "object",
             "required": [
@@ -613,11 +636,37 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "doneAt": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
                 "parentID": {
                     "type": "string"
+                },
+                "scheduledFrom": {
+                    "type": "string"
+                },
+                "scheduledTo": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "scoreUnit": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Tag"
+                    }
+                },
+                "targetScore": {
+                    "description": "Target score for binary (done/undone) task is 1",
+                    "type": "number",
+                    "minimum": 0
                 },
                 "title": {
                     "type": "string"
