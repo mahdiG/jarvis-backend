@@ -96,6 +96,139 @@ func TestCreateNote_MissingRequiredTitle(t *testing.T) {
 	}
 }
 
+func TestCreateNote_WithNewTags(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	body := `{"title":"Notes with tags","content":"Has tags","tags":[{"name":"urgent"},{"name":"personal"}]}`
+	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d", resp.StatusCode)
+	}
+
+	var note models.Note
+	err = DecodeJSON(resp, &note)
+	if err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(note.Tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(note.Tags))
+	}
+
+	// Verify tag names and IDs.
+	names := make(map[string]bool)
+	for _, tag := range note.Tags {
+		names[tag.Name] = true
+		if tag.ID == "" {
+			t.Errorf("tag %q has empty ID", tag.Name)
+		}
+	}
+	if !names["urgent"] {
+		t.Error("expected tag 'urgent' in response")
+	}
+	if !names["personal"] {
+		t.Error("expected tag 'personal' in response")
+	}
+
+	// Verify the tags actually exist in the database.
+	tags, err := repositories.GetTags(0, 0)
+	if err != nil {
+		t.Fatalf("failed to get tags: %v", err)
+	}
+	if len(tags) != 2 {
+		t.Fatalf("expected 2 tags in DB, got %d", len(tags))
+	}
+}
+
+func TestCreateNote_ReusesExistingTagByID(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	// Create a tag first.
+	existingTag, err := repositories.CreateTag(models.Tag{Name: "existing-tag"})
+	if err != nil {
+		t.Fatalf("failed to create tag: %v", err)
+	}
+
+	app := newTestApp()
+
+	// Create a note referencing the existing tag by its ID.
+	body := `{"title":"Note with existing tag","content":"Using existing tag","tags":[{"id":"` + string(existingTag.ID) + `","name":"existing-tag"},{"name":"new-tag"}]}`
+	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d", resp.StatusCode)
+	}
+
+	var note models.Note
+	err = DecodeJSON(resp, &note)
+	if err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(note.Tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(note.Tags))
+	}
+
+	// Verify the existing tag is not duplicated (only 2 tags total in DB).
+	tags, err := repositories.GetTags(0, 0)
+	if err != nil {
+		t.Fatalf("failed to get tags: %v", err)
+	}
+	if len(tags) != 2 {
+		t.Fatalf("expected exactly 2 tags in DB (existing + new), got %d", len(tags))
+	}
+}
+
+// TestCreateNote_WithTags_DeduplicatesByName verifies that when two notes
+// share the same tag name, the second creation silently reuses the existing
+// tag (the unique constraint on `name` prevents duplicate Tag rows, and
+// GORM's many2many creates only one tag record).
+func TestCreateNote_WithTags_DeduplicatesByName(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	// First note with tag "shared".
+	body1 := `{"title":"First","content":"First","tags":[{"name":"shared"}]}`
+	resp, err := PerformRequest(app, "POST", "/v1/notes", body1)
+	if err != nil {
+		t.Fatalf("first request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected status 201 for first note, got %d", resp.StatusCode)
+	}
+
+	// Second note with the same tag name "shared". GORM's Create inserts the
+	// tag first; the unique constraint prevents a duplicate Tag row, but
+	// GORM silently handles the conflict — the note is still created with
+	// status 201.
+	body2 := `{"title":"Second","content":"Second","tags":[{"name":"shared"}]}`
+	resp, err = PerformRequest(app, "POST", "/v1/notes", body2)
+	if err != nil {
+		t.Fatalf("second request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected status 201 for second note, got %d", resp.StatusCode)
+	}
+
+	// Only 1 tag in the database (the unique constraint prevented duplicates).
+	tags, err := repositories.GetTags(0, 0)
+	if err != nil {
+		t.Fatalf("failed to get tags: %v", err)
+	}
+	if len(tags) != 1 {
+		t.Fatalf("expected exactly 1 tag in DB (unique constraint prevented duplicates), got %d", len(tags))
+	}
+}
+
 // --------------------------------------------------------------------------
 // TestGetNotes
 // --------------------------------------------------------------------------
