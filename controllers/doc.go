@@ -2,7 +2,7 @@
 //
 // @title           Jarvis API
 // @version         1.0
-// @description     AI Life OS backend — task management, conversations, and AI chat.
+// @description     AI Life OS backend — tasks, notes, conversations, and AI chat.
 //
 // @contact.name    Mahdi
 //

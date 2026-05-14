@@ -26,6 +26,21 @@ definitions:
     required:
     - title
     type: object
+  models.File:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      name:
+        type: string
+      updatedAt:
+        type: string
+      url:
+        type: string
+    type: object
   models.Message:
     properties:
       content:
@@ -46,6 +61,31 @@ definitions:
     - content
     - conversationID
     - role
+    type: object
+  models.Note:
+    properties:
+      content:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      files:
+        items:
+          $ref: '#/definitions/models.File'
+        type: array
+      id:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/models.Tag'
+        type: array
+      title:
+        type: string
+      updatedAt:
+        type: string
+    required:
+    - title
     type: object
   models.Tag:
     properties:
@@ -103,7 +143,7 @@ host: localhost:3000
 info:
   contact:
     name: Mahdi
-  description: AI Life OS backend — task management, conversations, and AI chat.
+  description: AI Life OS backend — tasks, notes, conversations, and AI chat.
   title: Jarvis API
   version: "1.0"
 paths:
@@ -306,6 +346,140 @@ paths:
       summary: Send a message to a conversation
       tags:
       - Messages
+  /notes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Note'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: List all notes
+      tags:
+      - Notes
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Note to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Note'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Note'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Create a note
+      tags:
+      - Notes
+  /notes/{id}:
+    delete:
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Delete a note
+      tags:
+      - Notes
+    get:
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Note'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Get a note
+      tags:
+      - Notes
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated note fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Note'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Note'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Update a note
+      tags:
+      - Notes
   /tasks:
     get:
       produces:

@@ -34,6 +34,7 @@ func NewDatabase() (*gorm.DB, error) {
 
 	err = db.AutoMigrate(
 		&models.Task{},
+		&models.Note{},
 		&models.Conversation{},
 		&models.Message{},
 		&models.Tag{},
