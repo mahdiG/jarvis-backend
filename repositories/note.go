@@ -16,7 +16,9 @@ func GetNotes(limit, offset int) ([]models.Note, error) {
 	if offset > 0 {
 		query = query.Offset(offset)
 	}
-	result := query.Find(&notes)
+	result := query.
+		Preload("Tags").
+		Find(&notes)
 
 	return notes, result.Error
 }
@@ -26,6 +28,7 @@ func GetNote(condition models.Note) (models.Note, error) {
 
 	result := db.
 		Clauses(clause.Returning{}).
+		Preload("Tags").
 		Where(&condition).
 		First(&note)
 
