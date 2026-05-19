@@ -27,7 +27,7 @@ func TestCreateNote_Success(t *testing.T) {
 	}
 
 	var note models.Note
-	err = DecodeJSON(resp, &note)
+	_, err = DecodeResponseData(resp, &note)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -59,12 +59,11 @@ func TestCreateNote_InvalidBody(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -112,7 +111,7 @@ func TestCreateNote_WithNewTags(t *testing.T) {
 	}
 
 	var note models.Note
-	err = DecodeJSON(resp, &note)
+	_, err = DecodeResponseData(resp, &note)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -168,7 +167,7 @@ func TestCreateNote_ReusesExistingTagByID(t *testing.T) {
 	}
 
 	var note models.Note
-	err = DecodeJSON(resp, &note)
+	_, err = DecodeResponseData(resp, &note)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -248,7 +247,7 @@ func TestGetNotes_Empty(t *testing.T) {
 	}
 
 	var notes []models.Note
-	err = DecodeJSON(resp, &notes)
+	_, err = DecodeResponseData(resp, &notes)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -282,7 +281,7 @@ func TestGetNotes_WithItems(t *testing.T) {
 	}
 
 	var notes []models.Note
-	err = DecodeJSON(resp, &notes)
+	_, err = DecodeResponseData(resp, &notes)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -326,7 +325,7 @@ func TestGetNote_Success(t *testing.T) {
 	}
 
 	var note models.Note
-	err = DecodeJSON(resp, &note)
+	_, err = DecodeResponseData(resp, &note)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -355,12 +354,11 @@ func TestGetNote_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -390,7 +388,7 @@ func TestUpdateNote_Success(t *testing.T) {
 	}
 
 	var note models.Note
-	err = DecodeJSON(resp, &note)
+	_, err = DecodeResponseData(resp, &note)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -424,7 +422,7 @@ func TestUpdateNote_PartialUpdate(t *testing.T) {
 	}
 
 	var note models.Note
-	err = DecodeJSON(resp, &note)
+	_, err = DecodeResponseData(resp, &note)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -451,12 +449,11 @@ func TestUpdateNote_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -506,12 +503,11 @@ func TestDeleteNote_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }

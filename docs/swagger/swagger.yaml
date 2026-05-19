@@ -1,5 +1,91 @@
 basePath: /v1
 definitions:
+  controllers.ErrorDetail:
+    properties:
+      fields:
+        description: Fields contains per‑field validation errors (usually for 422
+          responses).
+        items:
+          $ref: '#/definitions/controllers.FieldError'
+        type: array
+      message:
+        description: Message is a human‑readable description of the error.
+        type: string
+    type: object
+  controllers.FieldError:
+    properties:
+      field:
+        description: the JSON fname
+        type: string
+      message:
+        description: human‑readable reason
+        type: string
+      tag:
+        description: validation tag that failed
+        type: string
+    type: object
+  controllers.Meta:
+    properties:
+      pagination:
+        allOf:
+        - $ref: '#/definitions/controllers.Pagination'
+        description: |-
+          Pagination contains cursor/offset‑based pagination info.
+          It is nil for endpoints that do not paginate.
+      requestID:
+        description: RequestID can be used for tracing requests across services.
+        type: string
+      warnings:
+        description: Warnings contains non‑fatal messages (e.g. “this endpoint is
+          deprecated”).
+        items:
+          type: string
+        type: array
+    type: object
+  controllers.Pagination:
+    properties:
+      page:
+        description: Page is the current page number (1‑based).
+        type: integer
+      pageSize:
+        description: PageSize is the maximum number of items per page.
+        type: integer
+      totalItems:
+        description: TotalItems is the total number of items across all pages.
+        format: int64
+        type: integer
+      totalPages:
+        description: TotalPages is the total number of pages (TotalItems / PageSize).
+        type: integer
+    type: object
+  controllers.Response-any:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/controllers.ErrorDetail'
+      meta:
+        $ref: '#/definitions/controllers.Meta'
+    type: object
+  controllers.Response-array_models_Note:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Note'
+        type: array
+      error:
+        $ref: '#/definitions/controllers.ErrorDetail'
+      meta:
+        $ref: '#/definitions/controllers.Meta'
+    type: object
+  controllers.Response-models_Note:
+    properties:
+      data:
+        $ref: '#/definitions/models.Note'
+      error:
+        $ref: '#/definitions/controllers.ErrorDetail'
+      meta:
+        $ref: '#/definitions/controllers.Meta'
+    type: object
   fiber.Map:
     additionalProperties: {}
     type: object
@@ -354,13 +440,11 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.Note'
-            type: array
+            $ref: '#/definitions/controllers.Response-array_models_Note'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: List all notes
       tags:
       - Notes
@@ -380,15 +464,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Note'
+            $ref: '#/definitions/controllers.Response-models_Note'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Create a note
       tags:
       - Notes
@@ -405,16 +489,14 @@ paths:
       responses:
         "204":
           description: No Content
-          schema:
-            $ref: '#/definitions/fiber.Map'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Delete a note
       tags:
       - Notes
@@ -431,15 +513,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Note'
+            $ref: '#/definitions/controllers.Response-models_Note'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Get a note
       tags:
       - Notes
@@ -464,19 +546,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Note'
+            $ref: '#/definitions/controllers.Response-models_Note'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Update a note
       tags:
       - Notes

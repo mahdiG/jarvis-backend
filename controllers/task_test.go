@@ -71,7 +71,34 @@ func DecodeJSON(resp *http.Response, target any) error {
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
-// ResponseError is the standard error response envelope.
+// ResponseEnvelope is the standard API response envelope used by tests
+// to decode responses wrapped in controllers.Response.
+type ResponseEnvelope struct {
+	Data  json.RawMessage `json:"data"`
+	Error *struct {
+		Message string          `json:"message"`
+		Fields  json.RawMessage `json:"fields"`
+	} `json:"error"`
+}
+
+// DecodeResponseData decodes the full response envelope and extracts the data
+// field into the given target. Returns the full envelope so callers can inspect
+// error/meta if needed.
+func DecodeResponseData(resp *http.Response, target any) (*ResponseEnvelope, error) {
+	var env ResponseEnvelope
+	if err := DecodeJSON(resp, &env); err != nil {
+		return nil, err
+	}
+	if env.Error != nil {
+		return &env, nil
+	}
+	if err := json.Unmarshal(env.Data, target); err != nil {
+		return &env, err
+	}
+	return &env, nil
+}
+
+// ResponseError is the legacy error envelope (for validate handler errors that aren't wrapped).
 type ResponseError struct {
 	Error string `json:"error"`
 }

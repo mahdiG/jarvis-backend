@@ -17,11 +17,17 @@ var validate = validator.New()
 //	if !Validate(c, &req) {
 //	    return nil
 //	}
-func Validate[T any](c fiber.Ctx, target *T) bool {
+func Validate[Type any](c fiber.Ctx, target *Type) bool {
 	err := c.Bind().Body(target)
 	if err != nil {
-		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid request body",
+		// c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		// 	"error": "invalid request body",
+		// })
+		c.Status(fiber.StatusBadRequest).JSON(Response[any]{
+			Data: nil,
+			Error: &ErrorDetail{
+				Message: "invalid request body",
+			},
 		})
 		return false
 	}
