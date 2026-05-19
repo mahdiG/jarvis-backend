@@ -6,25 +6,25 @@ import "github.com/gofiber/fiber/v3"
 
 // Response is the standard API response envelope.
 // Type is the concrete type of the successful payload.
-type Response[Type any] struct {
-	Data  Type
-	Error *ErrorDetail
-	Meta  *Meta
+type Response[DataType any] struct {
+	Data  DataType
+	Error *ResponseError
+	Meta  *ResponseMeta
 }
 
 // ─── Error Structures ──────────────────────────────────────────────────
 
-// ErrorDetail represents an API error.
-type ErrorDetail struct {
+// ResponseError represents an API error.
+type ResponseError struct {
 	// Message is a human‑readable description of the error.
 	Message string
 
 	// Fields contains per‑field validation errors (usually for 422 responses).
-	Fields []FieldError
+	Fields []ResponseErrorField
 }
 
-// FieldError describes a single field validation error.
-type FieldError struct {
+// ResponseErrorField describes a single field validation error.
+type ResponseErrorField struct {
 	Field   string // the JSON fname
 	Tag     string // validation tag that failed
 	Message string // human‑readable reason
@@ -32,8 +32,8 @@ type FieldError struct {
 
 // ─── Metadata ──────────────────────────────────────────────────────────
 
-// Meta holds additional response metadata such as pagination and request tracing.
-type Meta struct {
+// ResponseMeta holds additional response metadata such as pagination and request tracing.
+type ResponseMeta struct {
 	// RequestID can be used for tracing requests across services.
 	RequestID string
 
@@ -61,7 +61,7 @@ type Pagination struct {
 }
 
 // SuccessResponse builds a success response (no error, no meta) with data.
-func SuccessResponse[dataType any](c fiber.Ctx, statusCode int, data dataType, metadata *Meta) error {
+func SuccessResponse[dataType any](c fiber.Ctx, statusCode int, data dataType, metadata *ResponseMeta) error {
 	return c.Status(statusCode).JSON(Response[dataType]{
 		Data: data,
 		Meta: metadata,
@@ -72,7 +72,7 @@ func SuccessResponse[dataType any](c fiber.Ctx, statusCode int, data dataType, m
 func ErrorResponse(c fiber.Ctx, statusCode int, errorMessage string) error {
 	return c.Status(statusCode).JSON(Response[any]{
 		Data: nil,
-		Error: &ErrorDetail{
+		Error: &ResponseError{
 			Message: errorMessage,
 		},
 	})

@@ -99,3 +99,6 @@ Added Conversations & Messages API for a ChatGPT-like chat UI:
 
 May 13 - 10:00
 Replace openAPI with swaggo (has dashboard). Upgrade fiber to version 3 (I thought we were on the latest version already!)
+
+May 19 - 13:00
+Create unified api response type

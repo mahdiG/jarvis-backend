@@ -20,12 +20,9 @@ var validate = validator.New()
 func Validate[Type any](c fiber.Ctx, target *Type) bool {
 	err := c.Bind().Body(target)
 	if err != nil {
-		// c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-		// 	"error": "invalid request body",
-		// })
 		c.Status(fiber.StatusBadRequest).JSON(Response[any]{
 			Data: nil,
-			Error: &ErrorDetail{
+			Error: &ResponseError{
 				Message: "invalid request body",
 			},
 		})
@@ -36,24 +33,30 @@ func Validate[Type any](c fiber.Ctx, target *Type) bool {
 	if err != nil {
 		validationErrors, ok := err.(validator.ValidationErrors)
 		if !ok {
-			c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "request validation failed",
+			c.Status(fiber.StatusBadRequest).JSON(Response[any]{
+				Data: nil,
+				Error: &ResponseError{
+					Message: "request validation failed",
+				},
 			})
 			return false
 		}
 
-		fields := make([]fiber.Map, 0, len(validationErrors))
+		fields := make([]ResponseErrorField, 0, len(validationErrors))
 		for _, fieldError := range validationErrors {
-			fields = append(fields, fiber.Map{
-				"field":   fieldError.Field(),
-				"tag":     fieldError.Tag(),
-				"message": fieldError.Error(),
+			fields = append(fields, ResponseErrorField{
+				Field:   fieldError.Field(),
+				Tag:     fieldError.Tag(),
+				Message: fieldError.Error(),
 			})
 		}
 
-		c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":  "request validation failed",
-			"fields": fields,
+		c.Status(fiber.StatusBadRequest).JSON(Response[any]{
+			Data: nil,
+			Error: &ResponseError{
+				Message: "request validation failed",
+				Fields:  fields,
+			},
 		})
 		return false
 	}
