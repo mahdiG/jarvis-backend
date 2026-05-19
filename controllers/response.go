@@ -25,7 +25,7 @@ type ResponseError struct {
 
 // ResponseErrorField describes a single field validation error.
 type ResponseErrorField struct {
-	Field   string // the JSON fname
+	Name    string // the JSON field name
 	Tag     string // validation tag that failed
 	Message string // human‑readable reason
 }

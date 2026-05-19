@@ -45,7 +45,7 @@ func Validate[Type any](c fiber.Ctx, target *Type) bool {
 		fields := make([]ResponseErrorField, 0, len(validationErrors))
 		for _, fieldError := range validationErrors {
 			fields = append(fields, ResponseErrorField{
-				Field:   fieldError.Field(),
+				Name:    fieldError.Field(),
 				Tag:     fieldError.Tag(),
 				Message: fieldError.Error(),
 			})
