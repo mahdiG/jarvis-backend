@@ -7,9 +7,9 @@ import "github.com/gofiber/fiber/v3"
 // Response is the standard API response envelope.
 // Type is the concrete type of the successful payload.
 type Response[DataType any] struct {
-	Data  DataType
-	Error *ResponseError
-	Meta  *ResponseMeta
+	Data  DataType       `json:"data"`
+	Error *ResponseError `json:"error,omitempty"`
+	Meta  *ResponseMeta  `json:"meta,omitempty"`
 }
 
 // ─── Error Structures ──────────────────────────────────────────────────
@@ -17,17 +17,17 @@ type Response[DataType any] struct {
 // ResponseError represents an API error.
 type ResponseError struct {
 	// Message is a human‑readable description of the error.
-	Message string
+	Message string `json:"message"`
 
 	// Fields contains per‑field validation errors (usually for 422 responses).
-	Fields []ResponseErrorField
+	Fields []ResponseErrorField `json:"fields,omitempty"`
 }
 
 // ResponseErrorField describes a single field validation error.
 type ResponseErrorField struct {
-	Name    string // the JSON field name
-	Tag     string // validation tag that failed
-	Message string // human‑readable reason
+	Name    string `json:"name"`
+	Tag     string `json:"tag"`
+	Message string `json:"message"`
 }
 
 // ─── Metadata ──────────────────────────────────────────────────────────
@@ -35,29 +35,29 @@ type ResponseErrorField struct {
 // ResponseMeta holds additional response metadata such as pagination and request tracing.
 type ResponseMeta struct {
 	// RequestID can be used for tracing requests across services.
-	RequestID string
+	RequestID string `json:"request_id,omitempty"`
 
 	// Pagination contains cursor/offset‑based pagination info.
 	// It is nil for endpoints that do not paginate.
-	Pagination *Pagination
+	Pagination *Pagination `json:"pagination,omitempty"`
 
 	// Warnings contains non‑fatal messages (e.g. “this endpoint is deprecated”).
-	Warnings []string
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // Pagination provides pagination metadata.
 type Pagination struct {
 	// Page is the current page number (1‑based).
-	Page int
+	Page int `json:"page"`
 
 	// PageSize is the maximum number of items per page.
-	PageSize int
+	PageSize int `json:"page_size"`
 
 	// TotalItems is the total number of items across all pages.
-	TotalItems int64
+	TotalItems int64 `json:"total_items"`
 
 	// TotalPages is the total number of pages (TotalItems / PageSize).
-	TotalPages int
+	TotalPages int `json:"total_pages"`
 }
 
 // SuccessResponse builds a success response (no error, no meta) with data.

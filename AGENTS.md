@@ -36,6 +36,16 @@ Default behavior:
 - Update `docs/CODE-GUIDELINES.md` for coding/process rules.
 - Update `docs/JARVIS-LIFE-OS-VISION.md` for product principles and direction.
 
+## API Response Envelope
+
+All API responses use the unified `Response[DataType any]` envelope from `controllers/response.go`.
+
+- Use `SuccessResponse(c, statusCode, data, meta)` for success responses
+- Use `ErrorResponse(c, statusCode, message)` for error responses
+- Never call `c.Status(N).JSON(...)` directly
+- Delete endpoints return 200 with `{"data": null}`, not 204 No Content
+- See `docs/CODE-GUIDELINES.md` for the full pattern guide
+
 ## Documenting learned facts (required)
 
 Whenever an AI agent learns a useful fact about the codebase, a user preference, a project convention, a gotcha, or anything else that would make it easier for future agents (or humans) to work effectively here, it must immediately document it in the appropriate file.

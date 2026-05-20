@@ -122,7 +122,7 @@ func TestCreateTask_Success(t *testing.T) {
 	}
 
 	var task models.Task
-	err = DecodeJSON(resp, &task)
+	_, err = DecodeResponseData(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -154,12 +154,11 @@ func TestCreateTask_InvalidBody(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -178,15 +177,11 @@ func TestCreateTask_MissingRequiredTitle(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp struct {
-		Error  string `json:"error"`
-		Fields []any  `json:"fields"`
-	}
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -210,7 +205,7 @@ func TestGetTasks_Empty(t *testing.T) {
 	}
 
 	var tasks []models.Task
-	err = DecodeJSON(resp, &tasks)
+	_, err = DecodeResponseData(resp, &tasks)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -244,7 +239,7 @@ func TestGetTasks_WithItems(t *testing.T) {
 	}
 
 	var tasks []models.Task
-	err = DecodeJSON(resp, &tasks)
+	_, err = DecodeResponseData(resp, &tasks)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -288,7 +283,7 @@ func TestGetTask_Success(t *testing.T) {
 	}
 
 	var task models.Task
-	err = DecodeJSON(resp, &task)
+	_, err = DecodeResponseData(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -317,12 +312,11 @@ func TestGetTask_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -352,7 +346,7 @@ func TestUpdateTask_Success(t *testing.T) {
 	}
 
 	var task models.Task
-	err = DecodeJSON(resp, &task)
+	_, err = DecodeResponseData(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -386,7 +380,7 @@ func TestUpdateTask_PartialUpdate(t *testing.T) {
 	}
 
 	var task models.Task
-	err = DecodeJSON(resp, &task)
+	_, err = DecodeResponseData(resp, &task)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -413,12 +407,11 @@ func TestUpdateTask_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -443,8 +436,8 @@ func TestDeleteTask_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
 	// Verify the task is actually gone.
@@ -468,12 +461,11 @@ func TestDeleteTask_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }

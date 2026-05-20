@@ -20,12 +20,7 @@ var validate = validator.New()
 func Validate[Type any](c fiber.Ctx, target *Type) bool {
 	err := c.Bind().Body(target)
 	if err != nil {
-		c.Status(fiber.StatusBadRequest).JSON(Response[any]{
-			Data: nil,
-			Error: &ResponseError{
-				Message: "invalid request body",
-			},
-		})
+		ErrorResponse(c, fiber.StatusBadRequest, "invalid request body")
 		return false
 	}
 
@@ -33,12 +28,7 @@ func Validate[Type any](c fiber.Ctx, target *Type) bool {
 	if err != nil {
 		validationErrors, ok := err.(validator.ValidationErrors)
 		if !ok {
-			c.Status(fiber.StatusBadRequest).JSON(Response[any]{
-				Data: nil,
-				Error: &ResponseError{
-					Message: "request validation failed",
-				},
-			})
+			ErrorResponse(c, fiber.StatusBadRequest, "request validation failed")
 			return false
 		}
 

@@ -27,7 +27,7 @@ func TestCreateTag_Success(t *testing.T) {
 	}
 
 	var tag models.Tag
-	err = DecodeJSON(resp, &tag)
+	_, err = DecodeResponseData(resp, &tag)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -56,12 +56,11 @@ func TestCreateTag_InvalidBody(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -80,16 +79,15 @@ func TestCreateTag_MissingRequiredName(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp struct {
-		Error  string `json:"error"`
-		Fields []any  `json:"fields"`
-	}
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
+	}
+	if len(env.Error.Fields) == 0 {
+		t.Error("expected validation field errors in response")
 	}
 }
 
@@ -112,7 +110,7 @@ func TestGetTags_Empty(t *testing.T) {
 	}
 
 	var tags []models.Tag
-	err = DecodeJSON(resp, &tags)
+	_, err = DecodeResponseData(resp, &tags)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -146,7 +144,7 @@ func TestGetTags_WithItems(t *testing.T) {
 	}
 
 	var tags []models.Tag
-	err = DecodeJSON(resp, &tags)
+	_, err = DecodeResponseData(resp, &tags)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -190,7 +188,7 @@ func TestGetTag_Success(t *testing.T) {
 	}
 
 	var tag models.Tag
-	err = DecodeJSON(resp, &tag)
+	_, err = DecodeResponseData(resp, &tag)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -216,12 +214,11 @@ func TestGetTag_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -251,7 +248,7 @@ func TestUpdateTag_Success(t *testing.T) {
 	}
 
 	var tag models.Tag
-	err = DecodeJSON(resp, &tag)
+	_, err = DecodeResponseData(resp, &tag)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -274,12 +271,11 @@ func TestUpdateTag_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -304,8 +300,8 @@ func TestDeleteTag_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
 	// Verify the tag is actually gone.
@@ -329,12 +325,11 @@ func TestDeleteTag_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }

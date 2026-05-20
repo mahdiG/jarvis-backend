@@ -14,20 +14,18 @@ import (
 // @Summary      List all tags
 // @Tags         Tags
 // @Produce      json
-// @Success      200  {array}   models.Tag
-// @Failure      500  {object}  fiber.Map
+// @Success      200  {object}  Response[[]models.Tag]
+// @Failure      500  {object}  Response[any]
 // @Router       /tags [get]
 func GetTags(c fiber.Ctx) error {
 	tags, err := repositories.GetTags(0, 0)
 	if err != nil {
 		slog.Error("failed to get tags", "error", err)
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to get tags from db",
-		})
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get tags from db")
 	}
 
-	return c.JSON(tags)
+	return SuccessResponse(c, fiber.StatusOK, tags, nil)
 }
 
 // GetTag returns a single tag by its ID
@@ -35,9 +33,9 @@ func GetTags(c fiber.Ctx) error {
 // @Tags         Tags
 // @Produce      json
 // @Param        id   path      string  true  "Tag ID"
-// @Success      200  {object}  models.Tag
-// @Failure      404  {object}  fiber.Map
-// @Failure      500  {object}  fiber.Map
+// @Success      200  {object}  Response[models.Tag]
+// @Failure      404  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
 // @Router       /tags/{id} [get]
 func GetTag(c fiber.Ctx) error {
 	id := c.Params("id")
@@ -45,19 +43,15 @@ func GetTag(c fiber.Ctx) error {
 	tag, err := repositories.GetTag(models.Tag{Base: models.Base{ID: models.UID(id)}})
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "tag not found",
-			})
+			return ErrorResponse(c, fiber.StatusNotFound, "tag not found")
 		}
 
 		slog.Error("failed to get tag", "id", id, "error", err)
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to get tag from db",
-		})
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get tag from db")
 	}
 
-	return c.JSON(tag)
+	return SuccessResponse(c, fiber.StatusOK, tag, nil)
 }
 
 // CreateTag creates a new tag
@@ -66,9 +60,9 @@ func GetTag(c fiber.Ctx) error {
 // @Accept       json
 // @Produce      json
 // @Param        body  body      models.Tag  true  "Tag to create"
-// @Success      201  {object}  models.Tag
-// @Failure      400  {object}  fiber.Map
-// @Failure      500  {object}  fiber.Map
+// @Success      201  {object}  Response[models.Tag]
+// @Failure      400  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
 // @Router       /tags [post]
 func CreateTag(c fiber.Ctx) error {
 	var tag models.Tag
@@ -80,12 +74,10 @@ func CreateTag(c fiber.Ctx) error {
 	tag, err := repositories.CreateTag(tag)
 	if err != nil {
 		slog.Error("failed to create tag", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to create tag in db",
-		})
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to create tag in db")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(tag)
+	return SuccessResponse(c, fiber.StatusCreated, tag, nil)
 }
 
 // UpdateTag updates an existing tag (partial update)
@@ -95,10 +87,10 @@ func CreateTag(c fiber.Ctx) error {
 // @Produce      json
 // @Param        id    path      string       true  "Tag ID"
 // @Param        body  body      models.Tag  true  "Updated tag fields"
-// @Success      200  {object}  models.Tag
-// @Failure      400  {object}  fiber.Map
-// @Failure      404  {object}  fiber.Map
-// @Failure      500  {object}  fiber.Map
+// @Success      200  {object}  Response[models.Tag]
+// @Failure      400  {object}  Response[any]
+// @Failure      404  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
 // @Router       /tags/{id} [patch]
 func UpdateTag(c fiber.Ctx) error {
 	id := c.Params("id")
@@ -113,18 +105,14 @@ func UpdateTag(c fiber.Ctx) error {
 	tag, err := repositories.UpdateTag(input)
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "tag not found",
-			})
+			return ErrorResponse(c, fiber.StatusNotFound, "tag not found")
 		}
 
 		slog.Error("failed to update tag", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to update tag",
-		})
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update tag")
 	}
 
-	return c.JSON(tag)
+	return SuccessResponse(c, fiber.StatusOK, tag, nil)
 }
 
 // DeleteTag deletes a tag by its ID
@@ -132,9 +120,9 @@ func UpdateTag(c fiber.Ctx) error {
 // @Tags         Tags
 // @Produce      json
 // @Param        id   path      string  true  "Tag ID"
-// @Success      204  {object}  fiber.Map
-// @Failure      404  {object}  fiber.Map
-// @Failure      500  {object}  fiber.Map
+// @Success      200  {object}  Response[any]
+// @Failure      404  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
 // @Router       /tags/{id} [delete]
 func DeleteTag(c fiber.Ctx) error {
 	id := c.Params("id")
@@ -142,16 +130,12 @@ func DeleteTag(c fiber.Ctx) error {
 	err := repositories.DeleteTag(models.Tag{Base: models.Base{ID: models.UID(id)}})
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "tag not found",
-			})
+			return ErrorResponse(c, fiber.StatusNotFound, "tag not found")
 		}
 
 		slog.Error("failed to delete tag", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "failed to delete tag",
-		})
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete tag")
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
 }

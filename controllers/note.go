@@ -120,7 +120,7 @@ func UpdateNote(c fiber.Ctx) error {
 // @Tags         Notes
 // @Produce      json
 // @Param        id   path      string  true  "Note ID"
-// @Success      204
+// @Success      200  {object}  Response[any]
 // @Failure      404  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
 // @Router       /notes/{id} [delete]
@@ -137,5 +137,5 @@ func DeleteNote(c fiber.Ctx) error {
 		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete note")
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
 }

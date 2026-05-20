@@ -32,7 +32,7 @@ func TestGetMessages_Empty(t *testing.T) {
 	}
 
 	var messages []models.Message
-	err = DecodeJSON(resp, &messages)
+	_, err = DecodeResponseData(resp, &messages)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestGetMessages_WithItems(t *testing.T) {
 	}
 
 	var messages []models.Message
-	err = DecodeJSON(resp, &messages)
+	_, err = DecodeResponseData(resp, &messages)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -108,12 +108,11 @@ func TestGetMessages_ConversationNotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }

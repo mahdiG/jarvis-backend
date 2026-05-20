@@ -82,16 +82,15 @@ func TestCreateNote_MissingRequiredTitle(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp struct {
-		Error  string `json:"error"`
-		Fields []any  `json:"fields"`
-	}
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
+	}
+	if len(env.Error.Fields) == 0 {
+		t.Error("expected validation field errors in response")
 	}
 }
 
@@ -478,8 +477,8 @@ func TestDeleteNote_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
 	// Verify the note is actually gone.

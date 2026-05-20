@@ -175,30 +175,61 @@ Add more sentinels as needed (`ErrDuplicateEntry`, `ErrConflict`).
   - Always respond with proper HTTP status codes and consistent JSON error bodies.
   - Never leak internal error details to the API consumer. Use generic messages for 5xx, specific for 4xx when safe.
 - **No silent failures**: never write empty `catch {}` (Go doesn't have it, but avoid unhandled errors).
-- **Handler error pattern**:
+
+## API response envelope
+
+All API responses use a **unified envelope** defined in `controllers/response.go`:
+
+```go
+type Response[DataType any] struct {
+    Data  DataType       `json:"data"`
+    Error *ResponseError `json:"error"`
+    Meta  *ResponseMeta  `json:"meta"`
+}
+```
+
+Use the **`SuccessResponse`** and **`ErrorResponse`** helper functions — never construct the envelope manually:
+
+```go
+// Success: returns 200/201 with data in the envelope
+return SuccessResponse(c, fiber.StatusOK, task, nil)
+
+// For endpoints returning no meaningful data (e.g. delete), pass nil:
+return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
+
+// Error: returns an error status with a message in the envelope
+return ErrorResponse(c, fiber.StatusNotFound, "task not found")
+```
+
+Always use `SuccessResponse` and `ErrorResponse` in every handler. Do not call `c.Status(...).JSON(...)` directly. The helpers ensure consistent envelope structure, status codes, and serialization.
+
+### Response envelope details
+
+- **Success responses** omit the `error` field (it is `null`).
+- **Error responses** omit the `data` field (it is `null`).
+- **Delete endpoints** return `200 OK` with `{"data": null}` — not `204 No Content`. This ensures all endpoints use a consistent JSON response envelope.
+- **Create endpoints** return `201 Created`.
+- **Pagination metadata** can be added via the `Meta *ResponseMeta` parameter if needed.
+
+### Handler error pattern
 
 ```go
 if err != nil {
     if errors.Is(err, repositories.ErrRecordNotFound) {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-            "error": "task not found",
-        })
+        return ErrorResponse(c, fiber.StatusNotFound, "task not found")
     }
     slog.Error("failed to get task", "id", id, "error", err)
-    return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-        "error": "failed to get task from database",
-    })
+    return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get task from database")
 }
 ```
 
 ## HTTP handler code (Fiber)
 
 - **Handlers should be thin**: parse request, delegate to repository, format response.
-- **Use consistent JSON response format**: `{"error": "..."}` for errors, direct object/array for success.
 - **Use Fiber's `c.Params`, `c.Query`, `c.BodyParser`** for input extraction.
 - **Validate parsed input** before passing to business logic via `Validate` (see below).
-- **Use `fiber.Map`** for ad-hoc JSON maps, or dedicated response types for complex structures.
 - **Use GORM model structs as API contracts directly** — do not create separate request or response DTOs. The `models/` package owns both the database schema and the API contract. Add JSON tags (snake_case) and validation tags directly to the model struct. The frontend sends/receives JSON that maps to these same struct fields. This keeps the API surface in sync with the data layer and eliminates translation code.
+- **Do not use `fiber.Map`** for response bodies — use `SuccessResponse`/`ErrorResponse` instead.
 
 ---
 

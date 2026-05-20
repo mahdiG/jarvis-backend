@@ -87,13 +87,13 @@ err = db.AutoMigrate(&models.Task{}, &models.Habit{})
 
 Every resource typically has these five functions:
 
-| Function | HTTP Method | Purpose |
-|---|---|---|
-| `GetHabits(limit, offset int)` | GET / | List all (with optional pagination) |
-| `GetHabit(condition models.Habit)` | GET /:id | Get one by condition (usually ID) |
-| `CreateHabit(habit models.Habit)` | POST / | Create |
-| `UpdateHabit(habit models.Habit)` | PATCH /:id | Update (partial) |
-| `DeleteHabit(condition models.Habit)` | DELETE /:id | Delete |
+| Function                              | HTTP Method | Purpose                             |
+| ------------------------------------- | ----------- | ----------------------------------- |
+| `GetHabits(limit, offset int)`        | GET /       | List all (with optional pagination) |
+| `GetHabit(condition models.Habit)`    | GET /:id    | Get one by condition (usually ID)   |
+| `CreateHabit(habit models.Habit)`     | POST /      | Create                              |
+| `UpdateHabit(habit models.Habit)`     | PATCH /:id  | Update (partial)                    |
+| `DeleteHabit(condition models.Habit)` | DELETE /:id | Delete                              |
 
 ### Example
 
@@ -198,7 +198,7 @@ Add new sentinels there as needed (e.g., `ErrDuplicateEntry`, `ErrConflict`).
   - GET (single): `200 OK`
   - POST: `201 Created`
   - PATCH: `200 OK`
-  - DELETE: `204 No Content`
+  - DELETE: `200 OK`
 - **No separate request DTOs** — the model struct IS the API contract. Parse directly into the model.
 
 ### Example
@@ -317,12 +317,12 @@ See `controllers/task.go` — the controller functions follow an identical struc
 - **Resource groups**: each resource gets its own group (e.g., `/v1/tasks`, `/v1/habits`).
 - **RESTful endpoint mapping**:
 
-| Method | Path | Controller |
-|---|---|---|
-| GET | `/v1/habits` | `controllers.GetHabits` |
-| POST | `/v1/habits` | `controllers.CreateHabit` |
-| GET | `/v1/habits/:id` | `controllers.GetHabit` |
-| PATCH | `/v1/habits/:id` | `controllers.UpdateHabit` |
+| Method | Path             | Controller                |
+| ------ | ---------------- | ------------------------- |
+| GET    | `/v1/habits`     | `controllers.GetHabits`   |
+| POST   | `/v1/habits`     | `controllers.CreateHabit` |
+| GET    | `/v1/habits/:id` | `controllers.GetHabit`    |
+| PATCH  | `/v1/habits/:id` | `controllers.UpdateHabit` |
 | DELETE | `/v1/habits/:id` | `controllers.DeleteHabit` |
 
 ### Example
@@ -390,11 +390,13 @@ These helpers live in the shared `controllers` test package (the first test file
 Use `// --------------------------------------------------------------------------` section headers to visually separate endpoint groups.
 
 Success path tests should:
+
 - Assert HTTP status code.
 - Assert key fields in the response body.
 - Assert the object was actually persisted (e.g., for delete, verify fetch returns error).
 
 Error path tests should:
+
 - Assert the correct HTTP error status.
 - Assert the error response body has a non-empty `"error"` field.
 
@@ -499,31 +501,30 @@ func TestMain(m *testing.M) {
 
 ### HTTP Method → Controller → Repository Mapping
 
-| HTTP Method | Controller | Repository | Returns |
-|---|---|---|---|
-| `GET /` | `GetHabits` | `GetHabits(limit, offset)` | `[]models.Habit` |
-| `GET /:id` | `GetHabit` | `GetHabit(condition)` | `models.Habit` |
-| `POST /` | `CreateHabit` | `CreateHabit(habit)` | `models.Habit` (201) |
-| `PATCH /:id` | `UpdateHabit` | `UpdateHabit(habit)` | `models.Habit` |
-| `DELETE /:id` | `DeleteHabit` | `DeleteHabit(condition)` | (204) |
+| HTTP Method   | Controller    | Repository                 | Returns              |
+| ------------- | ------------- | -------------------------- | -------------------- |
+| `GET /`       | `GetHabits`   | `GetHabits(limit, offset)` | `[]models.Habit`     |
+| `GET /:id`    | `GetHabit`    | `GetHabit(condition)`      | `models.Habit`       |
+| `POST /`      | `CreateHabit` | `CreateHabit(habit)`       | `models.Habit` (201) |
+| `PATCH /:id`  | `UpdateHabit` | `UpdateHabit(habit)`       | `models.Habit`       |
+| `DELETE /:id` | `DeleteHabit` | `DeleteHabit(condition)`   | (204)                |
 
 ### HTTP Status Codes
 
-| Code | When to Use |
-|---|---|
-| `200 OK` | Successful GET (list or single), successful PATCH |
-| `201 Created` | Successful POST (resource created) |
-| `204 No Content` | Successful DELETE |
-| `400 Bad Request` | Invalid JSON body, validation failure |
-| `404 Not Found` | Resource not found (`ErrRecordNotFound`) |
-| `500 Internal Server Error` | Unexpected database or server error |
+| Code                        | When to Use                                                          |
+| --------------------------- | -------------------------------------------------------------------- |
+| `200 OK`                    | Successful GET (list or single), successful PATCH, successful DELETE |
+| `201 Created`               | Successful POST (resource created)                                   |
+| `400 Bad Request`           | Invalid JSON body, validation failure                                |
+| `404 Not Found`             | Resource not found (`ErrRecordNotFound`)                             |
+| `500 Internal Server Error` | Unexpected database or server error                                  |
 
 ### Error Sentinels → HTTP Mappings
 
-| Sentinel | HTTP Status | Error Message |
-|---|---|---|
-| `repositories.ErrRecordNotFound` | `404` | `"<resource> not found"` |
-| (unexpected error) | `500` | `"failed to <action> <resource>"` |
+| Sentinel                         | HTTP Status | Error Message                     |
+| -------------------------------- | ----------- | --------------------------------- |
+| `repositories.ErrRecordNotFound` | `404`       | `"<resource> not found"`          |
+| (unexpected error)               | `500`       | `"failed to <action> <resource>"` |
 
 ---
 

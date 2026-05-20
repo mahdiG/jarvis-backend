@@ -30,16 +30,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Conversation"
-                            }
+                            "$ref": "#/definitions/controllers.Response-array_models_Conversation"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -70,19 +67,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Conversation"
+                            "$ref": "#/definitions/controllers.Response-models_Conversation"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -110,19 +107,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Conversation"
+                            "$ref": "#/definitions/controllers.Response-models_Conversation"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -145,22 +142,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -198,25 +195,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Conversation"
+                            "$ref": "#/definitions/controllers.Response-models_Conversation"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -244,22 +241,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Message"
-                            }
+                            "$ref": "#/definitions/controllers.Response-array_models_Message"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -297,25 +291,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Returns { user: Message, assistant: Message }",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -446,8 +440,11 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -533,16 +530,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Tag"
-                            }
+                            "$ref": "#/definitions/controllers.Response-array_models_Tag"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -573,19 +567,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Tag"
+                            "$ref": "#/definitions/controllers.Response-models_Tag"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -613,19 +607,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Tag"
+                            "$ref": "#/definitions/controllers.Response-models_Tag"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -648,22 +642,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -701,25 +695,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Tag"
+                            "$ref": "#/definitions/controllers.Response-models_Tag"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -738,16 +732,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Task"
-                            }
+                            "$ref": "#/definitions/controllers.Response-array_models_Task"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -778,19 +769,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.Task"
+                            "$ref": "#/definitions/controllers.Response-models_Task"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -818,19 +809,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Task"
+                            "$ref": "#/definitions/controllers.Response-models_Task"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -853,22 +844,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content",
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -906,25 +897,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Task"
+                            "$ref": "#/definitions/controllers.Response-models_Task"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/fiber.Map"
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     }
                 }
@@ -932,63 +923,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controllers.ErrorDetail": {
-            "type": "object",
-            "properties": {
-                "fields": {
-                    "description": "Fields contains per‑field validation errors (usually for 422 responses).",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/controllers.FieldError"
-                    }
-                },
-                "message": {
-                    "description": "Message is a human‑readable description of the error.",
-                    "type": "string"
-                }
-            }
-        },
-        "controllers.FieldError": {
-            "type": "object",
-            "properties": {
-                "field": {
-                    "description": "the JSON fname",
-                    "type": "string"
-                },
-                "message": {
-                    "description": "human‑readable reason",
-                    "type": "string"
-                },
-                "tag": {
-                    "description": "validation tag that failed",
-                    "type": "string"
-                }
-            }
-        },
-        "controllers.Meta": {
-            "type": "object",
-            "properties": {
-                "pagination": {
-                    "description": "Pagination contains cursor/offset‑based pagination info.\nIt is nil for endpoints that do not paginate.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/controllers.Pagination"
-                        }
-                    ]
-                },
-                "requestID": {
-                    "description": "RequestID can be used for tracing requests across services.",
-                    "type": "string"
-                },
-                "warnings": {
-                    "description": "Warnings contains non‑fatal messages (e.g. “this endpoint is deprecated”).",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "controllers.Pagination": {
             "type": "object",
             "properties": {
@@ -996,16 +930,15 @@ const docTemplate = `{
                     "description": "Page is the current page number (1‑based).",
                     "type": "integer"
                 },
-                "pageSize": {
+                "page_size": {
                     "description": "PageSize is the maximum number of items per page.",
                     "type": "integer"
                 },
-                "totalItems": {
+                "total_items": {
                     "description": "TotalItems is the total number of items across all pages.",
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
                 },
-                "totalPages": {
+                "total_pages": {
                     "description": "TotalPages is the total number of pages (TotalItems / PageSize).",
                     "type": "integer"
                 }
@@ -1016,10 +949,44 @@ const docTemplate = `{
             "properties": {
                 "data": {},
                 "error": {
-                    "$ref": "#/definitions/controllers.ErrorDetail"
+                    "$ref": "#/definitions/controllers.ResponseError"
                 },
                 "meta": {
-                    "$ref": "#/definitions/controllers.Meta"
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.Response-array_models_Conversation": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Conversation"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.Response-array_models_Message": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Message"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
                 }
             }
         },
@@ -1033,10 +1000,58 @@ const docTemplate = `{
                     }
                 },
                 "error": {
-                    "$ref": "#/definitions/controllers.ErrorDetail"
+                    "$ref": "#/definitions/controllers.ResponseError"
                 },
                 "meta": {
-                    "$ref": "#/definitions/controllers.Meta"
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.Response-array_models_Tag": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Tag"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.Response-array_models_Task": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Task"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.Response-models_Conversation": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.Conversation"
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
                 }
             }
         },
@@ -1047,16 +1062,94 @@ const docTemplate = `{
                     "$ref": "#/definitions/models.Note"
                 },
                 "error": {
-                    "$ref": "#/definitions/controllers.ErrorDetail"
+                    "$ref": "#/definitions/controllers.ResponseError"
                 },
                 "meta": {
-                    "$ref": "#/definitions/controllers.Meta"
+                    "$ref": "#/definitions/controllers.ResponseMeta"
                 }
             }
         },
-        "fiber.Map": {
+        "controllers.Response-models_Tag": {
             "type": "object",
-            "additionalProperties": {}
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.Tag"
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.Response-models_Task": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.Task"
+                },
+                "error": {
+                    "$ref": "#/definitions/controllers.ResponseError"
+                },
+                "meta": {
+                    "$ref": "#/definitions/controllers.ResponseMeta"
+                }
+            }
+        },
+        "controllers.ResponseError": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "description": "Fields contains per‑field validation errors (usually for 422 responses).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.ResponseErrorField"
+                    }
+                },
+                "message": {
+                    "description": "Message is a human‑readable description of the error.",
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.ResponseErrorField": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.ResponseMeta": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "description": "Pagination contains cursor/offset‑based pagination info.\nIt is nil for endpoints that do not paginate.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/controllers.Pagination"
+                        }
+                    ]
+                },
+                "request_id": {
+                    "description": "RequestID can be used for tracing requests across services.",
+                    "type": "string"
+                },
+                "warnings": {
+                    "description": "Warnings contains non‑fatal messages (e.g. “this endpoint is deprecated”).",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "gorm.DeletedAt": {
             "type": "object",

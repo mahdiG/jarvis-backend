@@ -1,60 +1,17 @@
 basePath: /v1
 definitions:
-  controllers.ErrorDetail:
-    properties:
-      fields:
-        description: Fields contains per‑field validation errors (usually for 422
-          responses).
-        items:
-          $ref: '#/definitions/controllers.FieldError'
-        type: array
-      message:
-        description: Message is a human‑readable description of the error.
-        type: string
-    type: object
-  controllers.FieldError:
-    properties:
-      field:
-        description: the JSON fname
-        type: string
-      message:
-        description: human‑readable reason
-        type: string
-      tag:
-        description: validation tag that failed
-        type: string
-    type: object
-  controllers.Meta:
-    properties:
-      pagination:
-        allOf:
-        - $ref: '#/definitions/controllers.Pagination'
-        description: |-
-          Pagination contains cursor/offset‑based pagination info.
-          It is nil for endpoints that do not paginate.
-      requestID:
-        description: RequestID can be used for tracing requests across services.
-        type: string
-      warnings:
-        description: Warnings contains non‑fatal messages (e.g. “this endpoint is
-          deprecated”).
-        items:
-          type: string
-        type: array
-    type: object
   controllers.Pagination:
     properties:
       page:
         description: Page is the current page number (1‑based).
         type: integer
-      pageSize:
+      page_size:
         description: PageSize is the maximum number of items per page.
         type: integer
-      totalItems:
+      total_items:
         description: TotalItems is the total number of items across all pages.
-        format: int64
         type: integer
-      totalPages:
+      total_pages:
         description: TotalPages is the total number of pages (TotalItems / PageSize).
         type: integer
     type: object
@@ -62,9 +19,31 @@ definitions:
     properties:
       data: {}
       error:
-        $ref: '#/definitions/controllers.ErrorDetail'
+        $ref: '#/definitions/controllers.ResponseError'
       meta:
-        $ref: '#/definitions/controllers.Meta'
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.Response-array_models_Conversation:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Conversation'
+        type: array
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.Response-array_models_Message:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Message'
+        type: array
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
     type: object
   controllers.Response-array_models_Note:
     properties:
@@ -73,21 +52,106 @@ definitions:
           $ref: '#/definitions/models.Note'
         type: array
       error:
-        $ref: '#/definitions/controllers.ErrorDetail'
+        $ref: '#/definitions/controllers.ResponseError'
       meta:
-        $ref: '#/definitions/controllers.Meta'
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.Response-array_models_Tag:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Tag'
+        type: array
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.Response-array_models_Task:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.Response-models_Conversation:
+    properties:
+      data:
+        $ref: '#/definitions/models.Conversation'
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
     type: object
   controllers.Response-models_Note:
     properties:
       data:
         $ref: '#/definitions/models.Note'
       error:
-        $ref: '#/definitions/controllers.ErrorDetail'
+        $ref: '#/definitions/controllers.ResponseError'
       meta:
-        $ref: '#/definitions/controllers.Meta'
+        $ref: '#/definitions/controllers.ResponseMeta'
     type: object
-  fiber.Map:
-    additionalProperties: {}
+  controllers.Response-models_Tag:
+    properties:
+      data:
+        $ref: '#/definitions/models.Tag'
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.Response-models_Task:
+    properties:
+      data:
+        $ref: '#/definitions/models.Task'
+      error:
+        $ref: '#/definitions/controllers.ResponseError'
+      meta:
+        $ref: '#/definitions/controllers.ResponseMeta'
+    type: object
+  controllers.ResponseError:
+    properties:
+      fields:
+        description: Fields contains per‑field validation errors (usually for 422
+          responses).
+        items:
+          $ref: '#/definitions/controllers.ResponseErrorField'
+        type: array
+      message:
+        description: Message is a human‑readable description of the error.
+        type: string
+    type: object
+  controllers.ResponseErrorField:
+    properties:
+      message:
+        type: string
+      name:
+        type: string
+      tag:
+        type: string
+    type: object
+  controllers.ResponseMeta:
+    properties:
+      pagination:
+        allOf:
+        - $ref: '#/definitions/controllers.Pagination'
+        description: |-
+          Pagination contains cursor/offset‑based pagination info.
+          It is nil for endpoints that do not paginate.
+      request_id:
+        description: RequestID can be used for tracing requests across services.
+        type: string
+      warnings:
+        description: Warnings contains non‑fatal messages (e.g. “this endpoint is
+          deprecated”).
+        items:
+          type: string
+        type: array
     type: object
   gorm.DeletedAt:
     properties:
@@ -241,13 +305,11 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.Conversation'
-            type: array
+            $ref: '#/definitions/controllers.Response-array_models_Conversation'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: List all conversations
       tags:
       - Conversations
@@ -267,15 +329,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Conversation'
+            $ref: '#/definitions/controllers.Response-models_Conversation'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Create a conversation
       tags:
       - Conversations
@@ -290,18 +352,18 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Delete a conversation
       tags:
       - Conversations
@@ -318,15 +380,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Conversation'
+            $ref: '#/definitions/controllers.Response-models_Conversation'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Get a conversation
       tags:
       - Conversations
@@ -351,19 +413,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Conversation'
+            $ref: '#/definitions/controllers.Response-models_Conversation'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Update a conversation
       tags:
       - Conversations
@@ -381,17 +443,15 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.Message'
-            type: array
+            $ref: '#/definitions/controllers.Response-array_models_Message'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: List messages in a conversation
       tags:
       - Messages
@@ -416,19 +476,19 @@ paths:
         "201":
           description: 'Returns { user: Message, assistant: Message }'
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Send a message to a conversation
       tags:
       - Messages
@@ -487,8 +547,10 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
@@ -570,13 +632,11 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.Tag'
-            type: array
+            $ref: '#/definitions/controllers.Response-array_models_Tag'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: List all tags
       tags:
       - Tags
@@ -596,15 +656,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Tag'
+            $ref: '#/definitions/controllers.Response-models_Tag'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Create a tag
       tags:
       - Tags
@@ -619,18 +679,18 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Delete a tag
       tags:
       - Tags
@@ -647,15 +707,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Tag'
+            $ref: '#/definitions/controllers.Response-models_Tag'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Get a tag
       tags:
       - Tags
@@ -680,19 +740,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Tag'
+            $ref: '#/definitions/controllers.Response-models_Tag'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Update a tag
       tags:
       - Tags
@@ -704,13 +764,11 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.Task'
-            type: array
+            $ref: '#/definitions/controllers.Response-array_models_Task'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: List all tasks
       tags:
       - Tasks
@@ -730,15 +788,15 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.Task'
+            $ref: '#/definitions/controllers.Response-models_Task'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Create a task
       tags:
       - Tasks
@@ -753,18 +811,18 @@ paths:
       produces:
       - application/json
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Delete a task
       tags:
       - Tasks
@@ -781,15 +839,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Task'
+            $ref: '#/definitions/controllers.Response-models_Task'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Get a task
       tags:
       - Tasks
@@ -814,19 +872,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Task'
+            $ref: '#/definitions/controllers.Response-models_Task'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/controllers.Response-any'
       summary: Update a task
       tags:
       - Tasks

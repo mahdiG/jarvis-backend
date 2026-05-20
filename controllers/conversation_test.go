@@ -27,7 +27,7 @@ func TestCreateConversation_Success(t *testing.T) {
 	}
 
 	var conversation models.Conversation
-	err = DecodeJSON(resp, &conversation)
+	_, err = DecodeResponseData(resp, &conversation)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -56,12 +56,11 @@ func TestCreateConversation_InvalidBody(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -80,16 +79,15 @@ func TestCreateConversation_MissingRequiredTitle(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 
-	var errResp struct {
-		Error  string `json:"error"`
-		Fields []any  `json:"fields"`
-	}
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
+	}
+	if len(env.Error.Fields) == 0 {
+		t.Error("expected validation field errors in response")
 	}
 }
 
@@ -112,7 +110,7 @@ func TestGetConversations_Empty(t *testing.T) {
 	}
 
 	var conversations []models.Conversation
-	err = DecodeJSON(resp, &conversations)
+	_, err = DecodeResponseData(resp, &conversations)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -146,7 +144,7 @@ func TestGetConversations_WithItems(t *testing.T) {
 	}
 
 	var conversations []models.Conversation
-	err = DecodeJSON(resp, &conversations)
+	_, err = DecodeResponseData(resp, &conversations)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -189,7 +187,7 @@ func TestGetConversation_Success(t *testing.T) {
 	}
 
 	var conversation models.Conversation
-	err = DecodeJSON(resp, &conversation)
+	_, err = DecodeResponseData(resp, &conversation)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -215,12 +213,11 @@ func TestGetConversation_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -249,7 +246,7 @@ func TestUpdateConversation_Success(t *testing.T) {
 	}
 
 	var conversation models.Conversation
-	err = DecodeJSON(resp, &conversation)
+	_, err = DecodeResponseData(resp, &conversation)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -272,12 +269,11 @@ func TestUpdateConversation_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
@@ -301,8 +297,8 @@ func TestDeleteConversation_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
 	// Verify the conversation is actually gone.
@@ -326,12 +322,11 @@ func TestDeleteConversation_NotFound(t *testing.T) {
 		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 
-	var errResp ResponseError
-	err = DecodeJSON(resp, &errResp)
+	env, err := DecodeResponseData(resp, nil)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if errResp.Error == "" {
+	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
 }
