@@ -152,10 +152,11 @@ func TestCreateNotes_ReusesExistingTagByID(t *testing.T) {
 	defer cleanup()
 
 	// Create a tag first.
-	existingTag, err := repositories.CreateTag(models.Tag{Name: "existing-tag"})
+	createdTags, err := repositories.CreateTags([]models.Tag{{Name: "existing-tag"}})
 	if err != nil {
 		t.Fatalf("failed to create tag: %v", err)
 	}
+	existingTag := createdTags[0]
 
 	app := newTestApp()
 

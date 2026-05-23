@@ -34,7 +34,14 @@ func GetTag(condition models.Tag) (models.Tag, error) {
 }
 
 func CreateTags(tags []models.Tag) ([]models.Tag, error) {
-	result := db.Create(&tags)
+	result := db.Clauses(
+		clause.OnConflict{
+			Columns:   []clause.Column{{Name: "name"}},
+			DoUpdates: clause.Assignments(map[string]any{"deleted_at": nil}),
+		},
+		clause.Returning{}, // <-- populate tags with the upserted rows
+	).Create(&tags)
+
 	return tags, result.Error
 }
 
@@ -62,11 +69,6 @@ func UpdateTags(tags []models.Tag) error {
 // DeleteTags deletes tags by their IDs. Non‑existent IDs are silently ignored.
 func DeleteTags(ids []models.UID) error {
 	return db.Where("id IN ?", ids).Delete(&models.Tag{}).Error
-}
-
-func CreateTag(tag models.Tag) (models.Tag, error) {
-	result := db.Create(&tag)
-	return tag, result.Error
 }
 
 func UpdateTag(tag models.Tag) (models.Tag, error) {

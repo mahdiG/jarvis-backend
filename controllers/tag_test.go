@@ -133,11 +133,7 @@ func TestGetTags_WithItems(t *testing.T) {
 	defer cleanup()
 
 	// Seed two tags directly into the repository.
-	_, err := repositories.CreateTag(models.Tag{Name: "urgent"})
-	if err != nil {
-		t.Fatalf("failed to seed tag: %v", err)
-	}
-	_, err = repositories.CreateTag(models.Tag{Name: "personal"})
+	_, err := repositories.CreateTags([]models.Tag{{Name: "urgent"}, {Name: "personal"}})
 	if err != nil {
 		t.Fatalf("failed to seed tag: %v", err)
 	}
@@ -181,10 +177,11 @@ func TestGetTag_Success(t *testing.T) {
 	defer cleanup()
 
 	// Seed a tag so we know its ID.
-	original, err := repositories.CreateTag(models.Tag{Name: "single-tag"})
+	createdTags, err := repositories.CreateTags([]models.Tag{{Name: "single-tag"}})
 	if err != nil {
 		t.Fatalf("failed to seed tag: %v", err)
 	}
+	original := createdTags[0]
 
 	app := newTestApp()
 
@@ -241,14 +238,11 @@ func TestUpdateTags_Success(t *testing.T) {
 	defer cleanup()
 
 	// Seed two tags.
-	tag1, err := repositories.CreateTag(models.Tag{Name: "old-name-1"})
+	createdTags, err := repositories.CreateTags([]models.Tag{{Name: "old-name-1"}, {Name: "old-name-2"}})
 	if err != nil {
-		t.Fatalf("failed to seed tag: %v", err)
+		t.Fatalf("failed to seed tags: %v", err)
 	}
-	tag2, err := repositories.CreateTag(models.Tag{Name: "old-name-2"})
-	if err != nil {
-		t.Fatalf("failed to seed tag: %v", err)
-	}
+	tag1, tag2 := createdTags[0], createdTags[1]
 
 	app := newTestApp()
 
@@ -311,14 +305,11 @@ func TestDeleteTags_Success(t *testing.T) {
 	defer cleanup()
 
 	// Seed two tags.
-	tag1, err := repositories.CreateTag(models.Tag{Name: "deletable-1"})
+	createdTags, err := repositories.CreateTags([]models.Tag{{Name: "deletable-1"}, {Name: "deletable-2"}})
 	if err != nil {
-		t.Fatalf("failed to seed tag: %v", err)
+		t.Fatalf("failed to seed tags: %v", err)
 	}
-	tag2, err := repositories.CreateTag(models.Tag{Name: "deletable-2"})
-	if err != nil {
-		t.Fatalf("failed to seed tag: %v", err)
-	}
+	tag1, tag2 := createdTags[0], createdTags[1]
 
 	app := newTestApp()
 
