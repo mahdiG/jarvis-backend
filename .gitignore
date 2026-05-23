@@ -1,3 +1,10 @@
 tmp/
 .env
 .env.json
+
+# editors
+.idea/
+.vscode/
+.cursor/
+.continue
+
