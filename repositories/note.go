@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"jarvis/models"
+	"log/slog"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -111,5 +112,28 @@ func RestoreNotes(ids []models.UID) ([]models.Note, error) {
 // HardDeleteNotes permanently deletes notes by ID (regardless of soft‑delete
 // status). Non‑existent IDs are silently ignored.
 func HardDeleteNotes(ids []models.UID) error {
-	return db.Unscoped().Where("id IN ?", ids).Delete(&models.Note{}).Error
+	slog.Debug("Hard delete notes", "ids", ids)
+
+	var notes []models.Note
+	result := db.Unscoped().
+		Where("id IN ?", ids).
+		Find(&notes)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if len(notes) == 0 {
+		slog.Debug("no notes to delete")
+		return nil
+	}
+
+	result = db.Unscoped().
+		Select("Tags", "Files").
+		Delete(&notes)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
