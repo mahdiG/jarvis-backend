@@ -3,6 +3,7 @@ package repositories
 import (
 	"jarvis/models"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -35,24 +36,30 @@ func GetNote(condition models.Note) (models.Note, error) {
 	return note, result.Error
 }
 
-func CreateNote(note models.Note) (models.Note, error) {
-	result := db.Create(&note)
-	return note, result.Error
+func CreateNotes(notes []models.Note) ([]models.Note, error) {
+	result := db.Create(&notes)
+	return notes, result.Error
 }
 
-func UpdateNote(note models.Note) (models.Note, error) {
-	result := db.
-		Clauses(clause.Returning{}).
-		Where("id = ?", note.ID).
-		Updates(&note)
-
-	if result.Error != nil {
-		return note, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return note, ErrRecordNotFound
-	}
-	return note, nil
+// UpdateNotes performs a batch partial update. Each note in the slice must have
+// a non‑empty ID. If any note is not found the entire update is rolled back and
+// ErrRecordNotFound is returned.
+func UpdateNotes(notes []models.Note) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, note := range notes {
+			result := tx.
+				Model(&models.Note{}).
+				Where("id = ?", note.ID).
+				Updates(&note)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return ErrRecordNotFound
+			}
+		}
+		return nil
+	})
 }
 
 func GetTrashNotes(limit, offset int) ([]models.Note, error) {
@@ -72,56 +79,37 @@ func GetTrashNotes(limit, offset int) ([]models.Note, error) {
 	return notes, result.Error
 }
 
-func RestoreNote(id models.UID) (models.Note, error) {
-	var note models.Note
+// SoftDeleteNotes soft‑deletes the notes with the given IDs. Non‑existent IDs
+// are silently ignored.
+func SoftDeleteNotes(ids []models.UID) error {
+	return db.Where("id IN ?", ids).Delete(&models.Note{}).Error
+}
 
+// RestoreNotes restores soft‑deleted notes by ID and returns the restored notes.
+// Returns ErrRecordNotFound if none of the IDs matched a soft‑deleted note.
+func RestoreNotes(ids []models.UID) ([]models.Note, error) {
 	result := db.Unscoped().
 		Model(&models.Note{}).
-		Where("id = ? AND deleted_at IS NOT NULL", id).
+		Where("id IN ? AND deleted_at IS NOT NULL", ids).
 		Update("deleted_at", nil)
 
 	if result.Error != nil {
-		return note, result.Error
+		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return note, ErrRecordNotFound
+		return nil, ErrRecordNotFound
 	}
 
-	// Fetch the restored note with its preloaded associations.
-	getResult := db.
+	var notes []models.Note
+	err := db.
 		Preload("Tags").
-		First(&note, "id = ?", id)
-	if getResult.Error != nil {
-		return note, getResult.Error
-	}
-
-	return note, nil
+		Where("id IN ?", ids).
+		Find(&notes).Error
+	return notes, err
 }
 
-func PermanentDeleteNote(id models.UID) error {
-	result := db.Unscoped().
-		Where("id = ?", id).
-		Delete(&models.Note{})
-
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return ErrRecordNotFound
-	}
-	return nil
-}
-
-func DeleteNote(condition models.Note) error {
-	result := db.
-		Where(&condition).
-		Delete(&models.Note{})
-
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return ErrRecordNotFound
-	}
-	return nil
+// HardDeleteNotes permanently deletes notes by ID (regardless of soft‑delete
+// status). Non‑existent IDs are silently ignored.
+func HardDeleteNotes(ids []models.UID) error {
+	return db.Unscoped().Where("id IN ?", ids).Delete(&models.Note{}).Error
 }

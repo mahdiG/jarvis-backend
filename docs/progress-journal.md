@@ -106,6 +106,20 @@ Create unified api response type
 May 23 - 17:18
 Added trash APIs for notes (GetTrashNotes, RestoreNote, PermanentDeleteNote) and documented gotchas:
 
+May 23 - 18:39
+Converted all note operations to batch APIs:
+- POST /v1/notes — accepts array of notes, returns created notes
+- PATCH /v1/notes — accepts array of partial updates, returns no body
+- DELETE /v1/notes — accepts array of note IDs for soft-delete
+- POST /v1/notes/trash/restore — accepts array of note IDs for restore
+- DELETE /v1/notes/trash — accepts array of note IDs for permanent delete
+- GET /v1/notes/trash — unchanged (returns paginated trash notes)
+- GET /v1/notes — unchanged (returns paginated active notes)
+- GET /v1/notes/:id — unchanged (returns single note by ID)
+
+Updated Validate() in controllers/validate.go to support slice types via reflection.
+All 18 note tests pass.
+
 Key lessons learned (documented in AGENTS.md and docs/ADDING-APIS.md):
 
 1. **Route ordering (Fiber)**: Static sub-paths like `/trash` must be registered BEFORE parameterized paths like `/:id` — otherwise Fiber matches `trash` as the `:id` parameter.

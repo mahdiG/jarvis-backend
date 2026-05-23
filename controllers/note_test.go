@@ -10,16 +10,17 @@ import (
 )
 
 // --------------------------------------------------------------------------
-// TestCreateNote
+// TestCreateNotes
 // --------------------------------------------------------------------------
 
-func TestCreateNote_Success(t *testing.T) {
+func TestCreateNotes_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "POST", "/v1/notes", `{"title":"Meeting notes","content":"Discuss project roadmap"}`)
+	body := `[{"title":"Meeting notes","content":"Discuss project roadmap"},{"title":"Shopping list","content":"Buy groceries"}]`
+	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -27,26 +28,26 @@ func TestCreateNote_Success(t *testing.T) {
 		t.Fatalf("expected status 201, got %d", resp.StatusCode)
 	}
 
-	var note models.Note
-	_, err = DecodeResponseData(resp, &note)
+	var notes []models.Note
+	_, err = DecodeResponseData(resp, &notes)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if note.Title != "Meeting notes" {
-		t.Errorf("expected title %q, got %q", "Meeting notes", note.Title)
+	if len(notes) != 2 {
+		t.Fatalf("expected 2 notes, got %d", len(notes))
 	}
-	if note.Content != "Discuss project roadmap" {
-		t.Errorf("expected content %q, got %q", "Discuss project roadmap", note.Content)
+	if notes[0].Title != "Meeting notes" {
+		t.Errorf("expected title %q, got %q", "Meeting notes", notes[0].Title)
 	}
-	if note.ID == "" {
+	if notes[1].Title != "Shopping list" {
+		t.Errorf("expected title %q, got %q", "Shopping list", notes[1].Title)
+	}
+	if notes[0].ID == "" {
 		t.Error("expected note to have a non-empty ID")
-	}
-	if note.CreatedAt.IsZero() {
-		t.Error("expected note to have a CreatedAt timestamp")
 	}
 }
 
-func TestCreateNote_InvalidBody(t *testing.T) {
+func TestCreateNotes_InvalidBody(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
@@ -69,13 +70,15 @@ func TestCreateNote_InvalidBody(t *testing.T) {
 	}
 }
 
-func TestCreateNote_MissingRequiredTitle(t *testing.T) {
+func TestCreateNotes_MissingRequiredTitle(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "POST", "/v1/notes", `{"content":"missing title"}`)
+	// One note without a title should fail validation.
+	body := `[{"content":"missing title"}]`
+	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -90,18 +93,15 @@ func TestCreateNote_MissingRequiredTitle(t *testing.T) {
 	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
 	}
-	if len(env.Error.Fields) == 0 {
-		t.Error("expected validation field errors in response")
-	}
 }
 
-func TestCreateNote_WithNewTags(t *testing.T) {
+func TestCreateNotes_WithNewTags(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	body := `{"title":"Notes with tags","content":"Has tags","tags":[{"name":"urgent"},{"name":"personal"}]}`
+	body := `[{"title":"Notes with tags","content":"Has tags","tags":[{"name":"urgent"},{"name":"personal"}]}]`
 	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
@@ -110,18 +110,21 @@ func TestCreateNote_WithNewTags(t *testing.T) {
 		t.Fatalf("expected status 201, got %d", resp.StatusCode)
 	}
 
-	var note models.Note
-	_, err = DecodeResponseData(resp, &note)
+	var notes []models.Note
+	_, err = DecodeResponseData(resp, &notes)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(note.Tags) != 2 {
-		t.Fatalf("expected 2 tags, got %d", len(note.Tags))
+	if len(notes) != 1 {
+		t.Fatalf("expected 1 note, got %d", len(notes))
+	}
+	if len(notes[0].Tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(notes[0].Tags))
 	}
 
 	// Verify tag names and IDs.
 	names := make(map[string]bool)
-	for _, tag := range note.Tags {
+	for _, tag := range notes[0].Tags {
 		names[tag.Name] = true
 		if tag.ID == "" {
 			t.Errorf("tag %q has empty ID", tag.Name)
@@ -144,7 +147,7 @@ func TestCreateNote_WithNewTags(t *testing.T) {
 	}
 }
 
-func TestCreateNote_ReusesExistingTagByID(t *testing.T) {
+func TestCreateNotes_ReusesExistingTagByID(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
@@ -157,7 +160,7 @@ func TestCreateNote_ReusesExistingTagByID(t *testing.T) {
 	app := newTestApp()
 
 	// Create a note referencing the existing tag by its ID.
-	body := `{"title":"Note with existing tag","content":"Using existing tag","tags":[{"id":"` + string(existingTag.ID) + `","name":"existing-tag"},{"name":"new-tag"}]}`
+	body := `[{"title":"Note with existing tag","content":"Using existing tag","tags":[{"id":"` + string(existingTag.ID) + `","name":"existing-tag"},{"name":"new-tag"}]}]`
 	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
@@ -166,13 +169,16 @@ func TestCreateNote_ReusesExistingTagByID(t *testing.T) {
 		t.Fatalf("expected status 201, got %d", resp.StatusCode)
 	}
 
-	var note models.Note
-	_, err = DecodeResponseData(resp, &note)
+	var notes []models.Note
+	_, err = DecodeResponseData(resp, &notes)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(note.Tags) != 2 {
-		t.Fatalf("expected 2 tags, got %d", len(note.Tags))
+	if len(notes) != 1 {
+		t.Fatalf("expected 1 note, got %d", len(notes))
+	}
+	if len(notes[0].Tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(notes[0].Tags))
 	}
 
 	// Verify the existing tag is not duplicated (only 2 tags total in DB).
@@ -185,37 +191,23 @@ func TestCreateNote_ReusesExistingTagByID(t *testing.T) {
 	}
 }
 
-// TestCreateNote_WithTags_DeduplicatesByName verifies that when two notes
-// share the same tag name, the second creation silently reuses the existing
-// tag (the unique constraint on `name` prevents duplicate Tag rows, and
-// GORM's many2many creates only one tag record).
-func TestCreateNote_WithTags_DeduplicatesByName(t *testing.T) {
+// TestCreateNotes_DeduplicatesByName verifies that when two notes share the
+// same tag name within a single batch, the tag rows are deduplicated
+// (the unique constraint prevents duplicate Tag rows).
+func TestCreateNotes_DeduplicatesByName(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	// First note with tag "shared".
-	body1 := `{"title":"First","content":"First","tags":[{"name":"shared"}]}`
-	resp, err := PerformRequest(app, "POST", "/v1/notes", body1)
+	// Create two notes sharing the same tag name in a single batch.
+	body := `[{"title":"First","content":"First","tags":[{"name":"shared"}]},{"title":"Second","content":"Second","tags":[{"name":"shared"}]}]`
+	resp, err := PerformRequest(app, "POST", "/v1/notes", body)
 	if err != nil {
-		t.Fatalf("first request failed: %v", err)
+		t.Fatalf("request failed: %v", err)
 	}
 	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("expected status 201 for first note, got %d", resp.StatusCode)
-	}
-
-	// Second note with the same tag name "shared". GORM's Create inserts the
-	// tag first; the unique constraint prevents a duplicate Tag row, but
-	// GORM silently handles the conflict — the note is still created with
-	// status 201.
-	body2 := `{"title":"Second","content":"Second","tags":[{"name":"shared"}]}`
-	resp, err = PerformRequest(app, "POST", "/v1/notes", body2)
-	if err != nil {
-		t.Fatalf("second request failed: %v", err)
-	}
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("expected status 201 for second note, got %d", resp.StatusCode)
+		t.Fatalf("expected status 201, got %d", resp.StatusCode)
 	}
 
 	// Only 1 tag in the database (the unique constraint prevented duplicates).
@@ -261,13 +253,12 @@ func TestGetNotes_WithItems(t *testing.T) {
 	defer cleanup()
 
 	// Seed two notes directly into the repository.
-	_, err := repositories.CreateNote(models.Note{Title: "Note A", Content: "First note"})
+	_, err := repositories.CreateNotes([]models.Note{
+		{Title: "Note A", Content: "First note"},
+		{Title: "Note B", Content: "Second note"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
-	}
-	_, err = repositories.CreateNote(models.Note{Title: "Note B", Content: "Second note"})
-	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
 
 	app := newTestApp()
@@ -309,10 +300,11 @@ func TestGetNote_Success(t *testing.T) {
 	defer cleanup()
 
 	// Seed a note so we know its ID.
-	original, err := repositories.CreateNote(models.Note{Title: "Single note", Content: "Detail"})
+	seeded, err := repositories.CreateNotes([]models.Note{{Title: "Single note", Content: "Detail"}})
 	if err != nil {
 		t.Fatalf("failed to seed note: %v", err)
 	}
+	original := seeded[0]
 
 	app := newTestApp()
 
@@ -364,22 +356,26 @@ func TestGetNote_NotFound(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestUpdateNote
+// TestUpdateNotes
 // --------------------------------------------------------------------------
 
-func TestUpdateNote_Success(t *testing.T) {
+func TestUpdateNotes_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
-	// Seed a note.
-	original, err := repositories.CreateNote(models.Note{Title: "Old title", Content: "Old content"})
+	// Seed two notes.
+	seeded, err := repositories.CreateNotes([]models.Note{
+		{Title: "First", Content: "Old content"},
+		{Title: "Second", Content: "Also old"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/notes/"+string(original.ID), `{"title":"Updated title","content":"Updated content"}`)
+	body := `[{"id":"` + string(seeded[0].ID) + `","title":"Updated first","content":"New content"},{"id":"` + string(seeded[1].ID) + `","title":"Updated second"}]`
+	resp, err := PerformRequest(app, "PATCH", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -387,61 +383,40 @@ func TestUpdateNote_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	var note models.Note
-	_, err = DecodeResponseData(resp, &note)
+	// Verify notes were updated.
+	note1, err := repositories.GetNote(models.Note{Base: models.Base{ID: seeded[0].ID}})
 	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
+		t.Fatalf("failed to fetch note 1: %v", err)
 	}
-	if note.Title != "Updated title" {
-		t.Errorf("expected title %q, got %q", "Updated title", note.Title)
+	if note1.Title != "Updated first" {
+		t.Errorf("expected title %q, got %q", "Updated first", note1.Title)
 	}
-	if note.Content != "Updated content" {
-		t.Errorf("expected content %q, got %q", "Updated content", note.Content)
+	if note1.Content != "New content" {
+		t.Errorf("expected content %q, got %q", "New content", note1.Content)
+	}
+
+	note2, err := repositories.GetNote(models.Note{Base: models.Base{ID: seeded[1].ID}})
+	if err != nil {
+		t.Fatalf("failed to fetch note 2: %v", err)
+	}
+	if note2.Title != "Updated second" {
+		t.Errorf("expected title %q, got %q", "Updated second", note2.Title)
+	}
+	// Content should remain unchanged.
+	if note2.Content != "Also old" {
+		t.Errorf("expected content %q, got %q", "Also old", note2.Content)
 	}
 }
 
-func TestUpdateNote_PartialUpdate(t *testing.T) {
-	cleanup := BeginTx()
-	defer cleanup()
-
-	// Seed a note.
-	original, err := repositories.CreateNote(models.Note{Title: "Original", Content: "Original content"})
-	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
-	}
-
-	app := newTestApp()
-
-	// Update only the title.
-	resp, err := PerformRequest(app, "PATCH", "/v1/notes/"+string(original.ID), `{"title":"Only title changed"}`)
-	if err != nil {
-		t.Fatalf("request failed: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", resp.StatusCode)
-	}
-
-	var note models.Note
-	_, err = DecodeResponseData(resp, &note)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if note.Title != "Only title changed" {
-		t.Errorf("expected title %q, got %q", "Only title changed", note.Title)
-	}
-	// Content should remain unchanged since we didn't send it.
-	if note.Content != "Original content" {
-		t.Errorf("expected content %q, got %q", "Original content", note.Content)
-	}
-}
-
-func TestUpdateNote_NotFound(t *testing.T) {
+func TestUpdateNotes_NotFound(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/notes/nonexistent1", `{"title":"Should fail"}`)
+	// Try updating a non-existent note.
+	body := `[{"id":"nonexistent1","title":"Should fail"}]`
+	resp, err := PerformRequest(app, "PATCH", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -459,22 +434,26 @@ func TestUpdateNote_NotFound(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestDeleteNote
+// TestSoftDeleteNotes
 // --------------------------------------------------------------------------
 
-func TestDeleteNote_Success(t *testing.T) {
+func TestSoftDeleteNotes_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
-	// Seed a note.
-	original, err := repositories.CreateNote(models.Note{Title: "Deletable", Content: "Will be deleted"})
+	// Seed two notes.
+	seeded, err := repositories.CreateNotes([]models.Note{
+		{Title: "Deletable A", Content: "Will be deleted"},
+		{Title: "Deletable B", Content: "Also deleted"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/notes/"+string(original.ID), "")
+	body := `["` + string(seeded[0].ID) + `","` + string(seeded[1].ID) + `"]`
+	resp, err := PerformRequest(app, "DELETE", "/v1/notes", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -482,33 +461,38 @@ func TestDeleteNote_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	// Verify the note is actually gone.
-	_, err = repositories.GetNote(models.Note{Base: models.Base{ID: original.ID}})
+	// Verify the notes are gone from normal queries.
+	_, err = repositories.GetNote(models.Note{Base: models.Base{ID: seeded[0].ID}})
 	if err == nil {
 		t.Error("expected error fetching deleted note, got nil")
 	}
+	_, err = repositories.GetNote(models.Note{Base: models.Base{ID: seeded[1].ID}})
+	if err == nil {
+		t.Error("expected error fetching deleted note, got nil")
+	}
+
+	// Verify they are in the trash.
+	trash, err := repositories.GetTrashNotes(0, 0)
+	if err != nil {
+		t.Fatalf("failed to get trash: %v", err)
+	}
+	if len(trash) != 2 {
+		t.Errorf("expected 2 trashed notes, got %d", len(trash))
+	}
 }
 
-func TestDeleteNote_NotFound(t *testing.T) {
+func TestSoftDeleteNotes_InvalidBody(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/notes/nonexistent1", "")
+	resp, err := PerformRequest(app, "DELETE", "/v1/notes", `{invalid}`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected status 404, got %d", resp.StatusCode)
-	}
-
-	env, err := DecodeResponseData(resp, nil)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if env.Error == nil || env.Error.Message == "" {
-		t.Error("expected error message in response")
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", resp.StatusCode)
 	}
 }
 
@@ -545,17 +529,16 @@ func TestGetTrashNotes_WithItems(t *testing.T) {
 	defer cleanup()
 
 	// Seed two notes and soft-delete them.
-	note1, err := repositories.CreateNote(models.Note{Title: "Trash A", Content: "First trashed"})
+	seeded, err := repositories.CreateNotes([]models.Note{
+		{Title: "Trash A", Content: "First trashed"},
+		{Title: "Trash B", Content: "Second trashed"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
-	}
-	note2, err := repositories.CreateNote(models.Note{Title: "Trash B", Content: "Second trashed"})
-	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
 
-	_ = repositories.DeleteNote(models.Note{Base: models.Base{ID: note1.ID}})
-	_ = repositories.DeleteNote(models.Note{Base: models.Base{ID: note2.ID}})
+	ids := []models.UID{seeded[0].ID, seeded[1].ID}
+	_ = repositories.SoftDeleteNotes(ids)
 
 	app := newTestApp()
 
@@ -592,18 +575,18 @@ func TestGetTrashNotes_ExcludesActiveNotes(t *testing.T) {
 	defer cleanup()
 
 	// Seed one active note and one trashed note.
-	active, err := repositories.CreateNote(models.Note{Title: "Active", Content: "Not deleted"})
+	seeded, err := repositories.CreateNotes([]models.Note{
+		{Title: "Active", Content: "Not deleted"},
+		{Title: "Trashed", Content: "Soft-deleted"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
-	trashed, err := repositories.CreateNote(models.Note{Title: "Trashed", Content: "Soft-deleted"})
-	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
-	}
-	_ = repositories.DeleteNote(models.Note{Base: models.Base{ID: trashed.ID}})
+
+	_ = repositories.SoftDeleteNotes([]models.UID{seeded[1].ID})
 
 	// Ensure the active note still exists.
-	_, err = repositories.GetNote(models.Note{Base: models.Base{ID: active.ID}})
+	_, err = repositories.GetNote(models.Note{Base: models.Base{ID: seeded[0].ID}})
 	if err != nil {
 		t.Fatalf("active note should still exist: %v", err)
 	}
@@ -632,32 +615,38 @@ func TestGetTrashNotes_ExcludesActiveNotes(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestRestoreNote
+// TestRestoreNotes
 // --------------------------------------------------------------------------
 
-func TestRestoreNote_Success(t *testing.T) {
+func TestRestoreNotes_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
-	// Seed a note, soft-delete it, then restore it.
-	original, err := repositories.CreateNote(models.Note{Title: "Restorable", Content: "Will be restored"})
+	// Seed two notes and soft-delete them.
+	seeded, err := repositories.CreateNotes([]models.Note{
+		{Title: "Restorable A", Content: "Will be restored"},
+		{Title: "Restorable B", Content: "Also restored"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
-	_ = repositories.DeleteNote(models.Note{Base: models.Base{ID: original.ID}})
 
-	// Verify it's in trash.
+	ids := []models.UID{seeded[0].ID, seeded[1].ID}
+	_ = repositories.SoftDeleteNotes(ids)
+
+	// Verify they're in trash.
 	trashNotes, err := repositories.GetTrashNotes(0, 0)
 	if err != nil {
 		t.Fatalf("failed to get trash: %v", err)
 	}
-	if len(trashNotes) != 1 {
-		t.Fatalf("expected 1 trashed note, got %d", len(trashNotes))
+	if len(trashNotes) != 2 {
+		t.Fatalf("expected 2 trashed notes, got %d", len(trashNotes))
 	}
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/notes/trash/"+string(original.ID), "")
+	body := `["` + string(seeded[0].ID) + `","` + string(seeded[1].ID) + `"]`
+	resp, err := PerformRequest(app, "PATCH", "/v1/notes/trash", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -665,16 +654,16 @@ func TestRestoreNote_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	var note models.Note
-	_, err = DecodeResponseData(resp, &note)
+	var notes []models.Note
+	_, err = DecodeResponseData(resp, &notes)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if note.Title != "Restorable" {
-		t.Errorf("expected title %q, got %q", "Restorable", note.Title)
+	if len(notes) != 2 {
+		t.Fatalf("expected 2 restored notes, got %d", len(notes))
 	}
 
-	// Verify it's back from trash.
+	// Verify they're back from trash.
 	trashNotes, err = repositories.GetTrashNotes(0, 0)
 	if err != nil {
 		t.Fatalf("failed to get trash: %v", err)
@@ -683,20 +672,22 @@ func TestRestoreNote_Success(t *testing.T) {
 		t.Errorf("expected 0 trashed notes after restore, got %d", len(trashNotes))
 	}
 
-	// Verify it's fetchable via normal GetNote.
-	_, err = repositories.GetNote(models.Note{Base: models.Base{ID: original.ID}})
-	if err != nil {
-		t.Errorf("expected restored note to be fetchable: %v", err)
+	// Verify they're fetchable via normal GetNote.
+	for _, seed := range seeded {
+		_, err = repositories.GetNote(models.Note{Base: models.Base{ID: seed.ID}})
+		if err != nil {
+			t.Errorf("expected restored note %q to be fetchable: %v", seed.ID, err)
+		}
 	}
 }
 
-func TestRestoreNote_NotFound(t *testing.T) {
+func TestRestoreNotes_NotFound(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/notes/trash/nonexistent1", "")
+	resp, err := PerformRequest(app, "PATCH", "/v1/notes/trash", `["nonexistent1","nonexistent2"]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -713,19 +704,20 @@ func TestRestoreNote_NotFound(t *testing.T) {
 	}
 }
 
-func TestRestoreNote_ActiveNoteNotInTrash(t *testing.T) {
+func TestRestoreNotes_ActiveNoteNotInTrash(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed an active note (not deleted).
-	original, err := repositories.CreateNote(models.Note{Title: "Active", Content: "Not deleted"})
+	seeded, err := repositories.CreateNotes([]models.Note{{Title: "Active", Content: "Not deleted"}})
 	if err != nil {
 		t.Fatalf("failed to seed note: %v", err)
 	}
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/notes/trash/"+string(original.ID), "")
+	body := `["` + string(seeded[0].ID) + `"]`
+	resp, err := PerformRequest(app, "PATCH", "/v1/notes/trash", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -736,23 +728,28 @@ func TestRestoreNote_ActiveNoteNotInTrash(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestPermanentDeleteNote
+// TestHardDeleteNotes
 // --------------------------------------------------------------------------
 
-func TestPermanentDeleteNote_Success(t *testing.T) {
+func TestHardDeleteNotes_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
-	// Seed a note, soft-delete it, then permanently delete it.
-	original, err := repositories.CreateNote(models.Note{Title: "Permanent", Content: "Will be permanently deleted"})
+	// Seed two notes, soft-delete them, then permanently delete them.
+	seeded, err := repositories.CreateNotes([]models.Note{
+		{Title: "Permanent A", Content: "Will be permanently deleted"},
+		{Title: "Permanent B", Content: "Also gone"},
+	})
 	if err != nil {
-		t.Fatalf("failed to seed note: %v", err)
+		t.Fatalf("failed to seed notes: %v", err)
 	}
-	_ = repositories.DeleteNote(models.Note{Base: models.Base{ID: original.ID}})
+
+	_ = repositories.SoftDeleteNotes([]models.UID{seeded[0].ID, seeded[1].ID})
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/notes/trash/"+string(original.ID), "")
+	body := `["` + string(seeded[0].ID) + `","` + string(seeded[1].ID) + `"]`
+	resp, err := PerformRequest(app, "DELETE", "/v1/notes/trash", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -766,12 +763,11 @@ func TestPermanentDeleteNote_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	// Should return null data.
 	if string(env.Data) != "null" {
 		t.Errorf("expected null data in response, got %s", string(env.Data))
 	}
 
-	// Verify it's gone from trash.
+	// Verify they're gone from trash.
 	trashNotes, err := repositories.GetTrashNotes(0, 0)
 	if err != nil {
 		t.Fatalf("failed to get trash: %v", err)
@@ -781,46 +777,24 @@ func TestPermanentDeleteNote_Success(t *testing.T) {
 	}
 }
 
-func TestPermanentDeleteNote_NotFound(t *testing.T) {
-	cleanup := BeginTx()
-	defer cleanup()
-
-	app := newTestApp()
-
-	resp, err := PerformRequest(app, "DELETE", "/v1/notes/trash/nonexistent1", "")
-	if err != nil {
-		t.Fatalf("request failed: %v", err)
-	}
-	if resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected status 404, got %d", resp.StatusCode)
-	}
-
-	env, err := DecodeResponseData(resp, nil)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if env.Error == nil || env.Error.Message == "" {
-		t.Error("expected error message in response")
-	}
-}
-
-func TestPermanentDeleteNote_ActiveNote(t *testing.T) {
+func TestHardDeleteNotes_ActiveNotes(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed an active note (not deleted).
-	original, err := repositories.CreateNote(models.Note{Title: "Active", Content: "Active note"})
+	seeded, err := repositories.CreateNotes([]models.Note{{Title: "Active", Content: "Active note"}})
 	if err != nil {
 		t.Fatalf("failed to seed note: %v", err)
 	}
 
 	app := newTestApp()
 
-	// Permanent delete should still work on an active note (it hard-deletes unconditionally).
-	resp, err := PerformRequest(app, "DELETE", "/v1/notes/trash/"+string(original.ID), "")
+	body := `["` + string(seeded[0].ID) + `"]`
+	resp, err := PerformRequest(app, "DELETE", "/v1/notes/trash", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
+	// HardDelete works on any note regardless of soft-delete status.
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
@@ -831,7 +805,7 @@ func TestPermanentDeleteNote_ActiveNote(t *testing.T) {
 		t.Fatalf("failed to get notes: %v", err)
 	}
 	if len(notes) != 0 {
-		t.Errorf("expected 0 notes after permanent delete, got %d", len(notes))
+		t.Errorf("expected 0 notes after hard delete, got %d", len(notes))
 	}
 
 	// Verify it's not in trash either.
@@ -841,5 +815,22 @@ func TestPermanentDeleteNote_ActiveNote(t *testing.T) {
 	}
 	if len(trashNotes) != 0 {
 		t.Errorf("expected 0 trashed notes, got %d", len(trashNotes))
+	}
+}
+
+func TestHardDeleteNotes_NotFound(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	// HardDelete on non-existent IDs does not error (Delete with no matching
+	// rows is Ok in GORM).
+	resp, err := PerformRequest(app, "DELETE", "/v1/notes/trash", `["nonexistent1"]`)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 }

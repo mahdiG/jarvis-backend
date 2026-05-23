@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"reflect"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 )
@@ -17,6 +19,9 @@ var validate = validator.New()
 //	if !Validate(c, &req) {
 //	    return nil
 //	}
+// Validate parses the request body into target and validates it.
+// Type may be a struct or a slice of structs. For slices each element is
+// validated individually. Returns false and sends an error response on failure.
 func Validate[Type any](c fiber.Ctx, target *Type) bool {
 	err := c.Bind().Body(target)
 	if err != nil {
@@ -24,7 +29,34 @@ func Validate[Type any](c fiber.Ctx, target *Type) bool {
 		return false
 	}
 
-	err = validate.Struct(target)
+	return validateValue(c, target)
+}
+
+// validateValue performs validation on a struct or a slice of structs.
+func validateValue(c fiber.Ctx, value any) bool {
+	reflectedValue := reflect.ValueOf(value)
+	if reflectedValue.Kind() == reflect.Ptr && reflectedValue.Elem().Kind() == reflect.Slice {
+		sliceReflect := reflectedValue.Elem()
+		for index := 0; index < sliceReflect.Len(); index++ {
+			element := sliceReflect.Index(index)
+			if element.Kind() == reflect.Ptr {
+				element = element.Elem()
+			}
+			// Only validate struct elements; primitive types (e.g. UID) need no struct validation.
+			if element.Kind() == reflect.Struct {
+				if !validateStruct(c, element.Addr().Interface()) {
+					return false
+				}
+			}
+		}
+		return true
+	}
+	return validateStruct(c, value)
+}
+
+// validateStruct validates a single struct and sends an error response on failure.
+func validateStruct(c fiber.Ctx, target any) bool {
+	err := validate.Struct(target)
 	if err != nil {
 		validationErrors, ok := err.(validator.ValidationErrors)
 		if !ok {

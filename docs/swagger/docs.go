@@ -349,15 +349,18 @@ const docTemplate = `{
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Create a note",
+                "summary": "Create notes",
                 "parameters": [
                     {
-                        "description": "Note to create",
+                        "description": "Notes to create",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Note"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Note"
+                            }
                         }
                     }
                 ],
@@ -365,11 +368,109 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/controllers.Response-models_Note"
+                            "$ref": "#/definitions/controllers.Response-array_models_Note"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Delete notes",
+                "parameters": [
+                    {
+                        "description": "Note IDs to delete",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Update notes",
+                "parameters": [
+                    {
+                        "description": "Notes to update (each must include id)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Note"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/controllers.Response-any"
                         }
@@ -406,24 +507,30 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/notes/trash/{id}": {
+            },
             "delete": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Permanently delete a note",
+                "summary": "Permanently delete notes",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Note ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Note IDs to permanently delete",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
                     }
                 ],
                 "responses": {
@@ -433,8 +540,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/controllers.Response-any"
                         }
@@ -448,27 +555,41 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Restore a trashed note",
+                "summary": "Restore trashed notes",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Note ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Note IDs to restore",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.Response-models_Note"
+                            "$ref": "#/definitions/controllers.Response-array_models_Note"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
@@ -509,100 +630,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controllers.Response-models_Note"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notes"
-                ],
-                "summary": "Delete a note",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Note ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notes"
-                ],
-                "summary": "Update a note",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Note ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Updated note fields",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Note"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-models_Note"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
                     "404": {
