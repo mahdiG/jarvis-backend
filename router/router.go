@@ -21,10 +21,10 @@ func Setup(app *fiber.App) {
 
 	tags := v1.Group("/tags")
 	tags.Get("/", controllers.GetTags)
-	tags.Post("/", controllers.CreateTag)
+	tags.Post("/", controllers.CreateTags)
+	tags.Patch("/", controllers.UpdateTags)
+	tags.Delete("/", controllers.DeleteTags)
 	tags.Get("/:id", controllers.GetTag)
-	tags.Patch("/:id", controllers.UpdateTag)
-	tags.Delete("/:id", controllers.DeleteTag)
 
 	notes := v1.Group("/notes")
 	notes.Get("/", controllers.GetNotes)

@@ -106,6 +106,19 @@ Create unified api response type
 May 23 - 17:18
 Added trash APIs for notes (GetTrashNotes, RestoreNote, PermanentDeleteNote) and documented gotchas:
 
+May 23 - 21:47
+Converted all tag non-GET APIs to batch operations (matching notes pattern):
+- POST /v1/tags — accepts array of tags, returns created tags
+- PATCH /v1/tags — accepts array of partial updates, returns no body
+- DELETE /v1/tags — accepts array of tag IDs for deletion
+- GET /v1/tags — unchanged (returns all tags)
+- GET /v1/tags/:id — unchanged (returns single tag by ID)
+
+Old single-resource routes (PATCH /v1/tags/:id, DELETE /v1/tags/:id) removed.
+Added batch repo functions: CreateTags, UpdateTags (transaction-based), DeleteTags.
+Old single-entity repo functions (CreateTag, UpdateTag, DeleteTag) kept for test seeding.
+All 12 tag tests pass.
+
 May 23 - 18:39
 Converted all note operations to batch APIs:
 - POST /v1/notes — accepts array of notes, returns created notes

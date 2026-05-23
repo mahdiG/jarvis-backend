@@ -709,6 +709,36 @@ paths:
       tags:
       - Notes
   /tags:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tag IDs to delete
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Delete tags
+      tags:
+      - Tags
     get:
       produces:
       - application/json
@@ -724,47 +754,27 @@ paths:
       summary: List all tags
       tags:
       - Tags
-    post:
+    patch:
       consumes:
       - application/json
       parameters:
-      - description: Tag to create
+      - description: Tags to update (each must include id)
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Tag'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/controllers.Response-models_Tag'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-      summary: Create a tag
-      tags:
-      - Tags
-  /tags/{id}:
-    delete:
-      parameters:
-      - description: Tag ID
-        in: path
-        name: id
-        required: true
-        type: string
+          items:
+            $ref: '#/definitions/models.Tag'
+          type: array
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/controllers.Response-any'
         "404":
@@ -775,9 +785,40 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/controllers.Response-any'
-      summary: Delete a tag
+      summary: Update tags
       tags:
       - Tags
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tags to create
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.Tag'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controllers.Response-array_models_Tag'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Create tags
+      tags:
+      - Tags
+  /tags/{id}:
     get:
       parameters:
       - description: Tag ID
@@ -801,43 +842,6 @@ paths:
           schema:
             $ref: '#/definitions/controllers.Response-any'
       summary: Get a tag
-      tags:
-      - Tags
-    patch:
-      consumes:
-      - application/json
-      parameters:
-      - description: Tag ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Updated tag fields
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/models.Tag'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controllers.Response-models_Tag'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-      summary: Update a tag
       tags:
       - Tags
   /tasks:

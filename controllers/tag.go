@@ -54,87 +54,84 @@ func GetTag(c fiber.Ctx) error {
 	return SuccessResponse(c, fiber.StatusOK, tag, nil)
 }
 
-// CreateTag creates a new tag
-// @Summary      Create a tag
+// CreateTags creates multiple tags
+// @Summary      Create tags
 // @Tags         Tags
 // @Accept       json
 // @Produce      json
-// @Param        body  body      models.Tag  true  "Tag to create"
-// @Success      201  {object}  Response[models.Tag]
+// @Param        body  body      []models.Tag  true  "Tags to create"
+// @Success      201  {object}  Response[[]models.Tag]
 // @Failure      400  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
 // @Router       /tags [post]
-func CreateTag(c fiber.Ctx) error {
-	var tag models.Tag
+func CreateTags(c fiber.Ctx) error {
+	var tags []models.Tag
 
-	if !Validate(c, &tag) {
+	if !Validate(c, &tags) {
 		return nil
 	}
 
-	tag, err := repositories.CreateTag(tag)
+	created, err := repositories.CreateTags(tags)
 	if err != nil {
-		slog.Error("failed to create tag", "error", err)
-		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to create tag in db")
+		slog.Error("failed to create tags", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to create tags in db")
 	}
 
-	return SuccessResponse(c, fiber.StatusCreated, tag, nil)
+	return SuccessResponse(c, fiber.StatusCreated, created, nil)
 }
 
-// UpdateTag updates an existing tag (partial update)
-// @Summary      Update a tag
+// UpdateTags performs a batch partial update on tags
+// @Summary      Update tags
 // @Tags         Tags
 // @Accept       json
 // @Produce      json
-// @Param        id    path      string       true  "Tag ID"
-// @Param        body  body      models.Tag  true  "Updated tag fields"
-// @Success      200  {object}  Response[models.Tag]
+// @Param        body  body      []models.Tag  true  "Tags to update (each must include id)"
+// @Success      200  {object}  Response[any]
 // @Failure      400  {object}  Response[any]
 // @Failure      404  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
-// @Router       /tags/{id} [patch]
-func UpdateTag(c fiber.Ctx) error {
-	id := c.Params("id")
+// @Router       /tags [patch]
+func UpdateTags(c fiber.Ctx) error {
+	var tags []models.Tag
 
-	var input models.Tag
-	if !Validate(c, &input) {
+	if !Validate(c, &tags) {
 		return nil
 	}
 
-	input.ID = models.UID(id)
-
-	tag, err := repositories.UpdateTag(input)
+	err := repositories.UpdateTags(tags)
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return ErrorResponse(c, fiber.StatusNotFound, "tag not found")
+			return ErrorResponse(c, fiber.StatusNotFound, "one or more tags not found")
 		}
 
-		slog.Error("failed to update tag", "id", id, "error", err)
-		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update tag")
+		slog.Error("failed to update tags", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update tags")
 	}
 
-	return SuccessResponse(c, fiber.StatusOK, tag, nil)
+	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
 }
 
-// DeleteTag deletes a tag by its ID
-// @Summary      Delete a tag
+// DeleteTags deletes tags by their IDs
+// @Summary      Delete tags
 // @Tags         Tags
+// @Accept       json
 // @Produce      json
-// @Param        id   path      string  true  "Tag ID"
+// @Param        body  body      []string  true  "Tag IDs to delete"
 // @Success      200  {object}  Response[any]
-// @Failure      404  {object}  Response[any]
+// @Failure      400  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
-// @Router       /tags/{id} [delete]
-func DeleteTag(c fiber.Ctx) error {
-	id := c.Params("id")
+// @Router       /tags [delete]
+func DeleteTags(c fiber.Ctx) error {
+	var ids []models.UID
 
-	err := repositories.DeleteTag(models.Tag{Base: models.Base{ID: models.UID(id)}})
+	if !Validate(c, &ids) {
+		return nil
+	}
+
+	err := repositories.DeleteTags(ids)
 	if err != nil {
-		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return ErrorResponse(c, fiber.StatusNotFound, "tag not found")
-		}
-
-		slog.Error("failed to delete tag", "id", id, "error", err)
-		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete tag")
+		slog.Error("failed to delete tags", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete tags")
 	}
 
 	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)

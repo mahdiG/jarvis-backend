@@ -9,16 +9,16 @@ import (
 )
 
 // --------------------------------------------------------------------------
-// TestCreateTag
+// TestCreateTags
 // --------------------------------------------------------------------------
 
-func TestCreateTag_Success(t *testing.T) {
+func TestCreateTags_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "POST", "/v1/tags", `{"name":"urgent"}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tags", `[{"name":"urgent"},{"name":"personal"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -26,23 +26,32 @@ func TestCreateTag_Success(t *testing.T) {
 		t.Fatalf("expected status 201, got %d", resp.StatusCode)
 	}
 
-	var tag models.Tag
-	_, err = DecodeResponseData(resp, &tag)
+	var tags []models.Tag
+	_, err = DecodeResponseData(resp, &tags)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if tag.Name != "urgent" {
-		t.Errorf("expected name %q, got %q", "urgent", tag.Name)
+	if len(tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(tags))
 	}
-	if tag.ID == "" {
-		t.Error("expected tag to have a non-empty ID")
+	names := map[string]bool{"urgent": false, "personal": false}
+	for _, tag := range tags {
+		if tag.ID == "" {
+			t.Error("expected each tag to have a non-empty ID")
+		}
+		if tag.CreatedAt.IsZero() {
+			t.Error("expected each tag to have a CreatedAt timestamp")
+		}
+		names[tag.Name] = true
 	}
-	if tag.CreatedAt.IsZero() {
-		t.Error("expected tag to have a CreatedAt timestamp")
+	for name, found := range names {
+		if !found {
+			t.Errorf("expected tag %q in results", name)
+		}
 	}
 }
 
-func TestCreateTag_InvalidBody(t *testing.T) {
+func TestCreateTags_InvalidBody(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
@@ -65,13 +74,13 @@ func TestCreateTag_InvalidBody(t *testing.T) {
 	}
 }
 
-func TestCreateTag_MissingRequiredName(t *testing.T) {
+func TestCreateTags_MissingRequiredName(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "POST", "/v1/tags", `{}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tags", `[{}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -224,22 +233,27 @@ func TestGetTag_NotFound(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestUpdateTag
+// TestUpdateTags
 // --------------------------------------------------------------------------
 
-func TestUpdateTag_Success(t *testing.T) {
+func TestUpdateTags_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
-	// Seed a tag.
-	original, err := repositories.CreateTag(models.Tag{Name: "old-name"})
+	// Seed two tags.
+	tag1, err := repositories.CreateTag(models.Tag{Name: "old-name-1"})
+	if err != nil {
+		t.Fatalf("failed to seed tag: %v", err)
+	}
+	tag2, err := repositories.CreateTag(models.Tag{Name: "old-name-2"})
 	if err != nil {
 		t.Fatalf("failed to seed tag: %v", err)
 	}
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/tags/"+string(original.ID), `{"name":"new-name"}`)
+	body := `[{"id":"` + string(tag1.ID) + `","name":"new-name-1"},{"id":"` + string(tag2.ID) + `","name":"new-name-2"}]`
+	resp, err := PerformRequest(app, "PATCH", "/v1/tags", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -247,23 +261,31 @@ func TestUpdateTag_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	var tag models.Tag
-	_, err = DecodeResponseData(resp, &tag)
+	// Verify updates.
+	updated1, err := repositories.GetTag(models.Tag{Base: models.Base{ID: tag1.ID}})
 	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
+		t.Fatalf("failed to fetch updated tag: %v", err)
 	}
-	if tag.Name != "new-name" {
-		t.Errorf("expected name %q, got %q", "new-name", tag.Name)
+	if updated1.Name != "new-name-1" {
+		t.Errorf("expected name %q, got %q", "new-name-1", updated1.Name)
+	}
+
+	updated2, err := repositories.GetTag(models.Tag{Base: models.Base{ID: tag2.ID}})
+	if err != nil {
+		t.Fatalf("failed to fetch updated tag: %v", err)
+	}
+	if updated2.Name != "new-name-2" {
+		t.Errorf("expected name %q, got %q", "new-name-2", updated2.Name)
 	}
 }
 
-func TestUpdateTag_NotFound(t *testing.T) {
+func TestUpdateTags_NotFound(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/tags/nonexistent1", `{"name":"Should fail"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tags", `[{"id":"nonexistent1","name":"Should fail"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -281,22 +303,27 @@ func TestUpdateTag_NotFound(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestDeleteTag
+// TestDeleteTags
 // --------------------------------------------------------------------------
 
-func TestDeleteTag_Success(t *testing.T) {
+func TestDeleteTags_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
-	// Seed a tag.
-	original, err := repositories.CreateTag(models.Tag{Name: "deletable"})
+	// Seed two tags.
+	tag1, err := repositories.CreateTag(models.Tag{Name: "deletable-1"})
+	if err != nil {
+		t.Fatalf("failed to seed tag: %v", err)
+	}
+	tag2, err := repositories.CreateTag(models.Tag{Name: "deletable-2"})
 	if err != nil {
 		t.Fatalf("failed to seed tag: %v", err)
 	}
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/tags/"+string(original.ID), "")
+	body := `["` + string(tag1.ID) + `","` + string(tag2.ID) + `"]`
+	resp, err := PerformRequest(app, "DELETE", "/v1/tags", body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -304,32 +331,28 @@ func TestDeleteTag_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	// Verify the tag is actually gone.
-	_, err = repositories.GetTag(models.Tag{Base: models.Base{ID: original.ID}})
+	// Verify both tags are gone.
+	_, err = repositories.GetTag(models.Tag{Base: models.Base{ID: tag1.ID}})
 	if err == nil {
-		t.Error("expected error fetching deleted tag, got nil")
+		t.Error("expected error fetching deleted tag 1, got nil")
+	}
+	_, err = repositories.GetTag(models.Tag{Base: models.Base{ID: tag2.ID}})
+	if err == nil {
+		t.Error("expected error fetching deleted tag 2, got nil")
 	}
 }
 
-func TestDeleteTag_NotFound(t *testing.T) {
+func TestDeleteTags_MissingIDs(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/tags/nonexistent1", "")
+	resp, err := PerformRequest(app, "DELETE", "/v1/tags", `["nonexistent1","nonexistent2"]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected status 404, got %d", resp.StatusCode)
-	}
-
-	env, err := DecodeResponseData(resp, nil)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if env.Error == nil || env.Error.Message == "" {
-		t.Error("expected error message in response")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 }
