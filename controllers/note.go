@@ -115,6 +115,73 @@ func UpdateNote(c fiber.Ctx) error {
 	return SuccessResponse(c, fiber.StatusOK, note, nil)
 }
 
+// GetTrashNotes returns all soft-deleted notes
+// @Summary      List trashed notes
+// @Tags         Notes
+// @Produce      json
+// @Success      200  {object}  Response[[]models.Note]
+// @Failure      500  {object}  Response[any]
+// @Router       /notes/trash [get]
+func GetTrashNotes(c fiber.Ctx) error {
+	notes, err := repositories.GetTrashNotes(0, 0)
+	if err != nil {
+		slog.Error("failed to get trashed notes", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get trashed notes from db")
+	}
+
+	return SuccessResponse(c, fiber.StatusOK, notes, nil)
+}
+
+// RestoreNote restores a soft-deleted note by its ID
+// @Summary      Restore a trashed note
+// @Tags         Notes
+// @Produce      json
+// @Param        id   path      string  true  "Note ID"
+// @Success      200  {object}  Response[models.Note]
+// @Failure      404  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
+// @Router       /notes/trash/{id} [patch]
+func RestoreNote(c fiber.Ctx) error {
+	id := c.Params("id")
+
+	note, err := repositories.RestoreNote(models.UID(id))
+	if err != nil {
+		if errors.Is(err, repositories.ErrRecordNotFound) {
+			return ErrorResponse(c, fiber.StatusNotFound, "note not found in trash")
+		}
+
+		slog.Error("failed to restore note", "id", id, "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to restore note")
+	}
+
+	return SuccessResponse(c, fiber.StatusOK, note, nil)
+}
+
+// PermanentDeleteNote permanently deletes a note by its ID (even if soft-deleted)
+// @Summary      Permanently delete a note
+// @Tags         Notes
+// @Produce      json
+// @Param        id   path      string  true  "Note ID"
+// @Success      200  {object}  Response[any]
+// @Failure      404  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
+// @Router       /notes/trash/{id} [delete]
+func PermanentDeleteNote(c fiber.Ctx) error {
+	id := c.Params("id")
+
+	err := repositories.PermanentDeleteNote(models.UID(id))
+	if err != nil {
+		if errors.Is(err, repositories.ErrRecordNotFound) {
+			return ErrorResponse(c, fiber.StatusNotFound, "note not found")
+		}
+
+		slog.Error("failed to permanently delete note", "id", id, "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to permanently delete note")
+	}
+
+	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
+}
+
 // DeleteNote deletes a note by its ID
 // @Summary      Delete a note
 // @Tags         Notes

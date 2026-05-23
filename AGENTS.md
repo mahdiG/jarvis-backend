@@ -9,6 +9,7 @@ Agents should use their tool functions when needed and prefer it over running sh
 - **Code guidelines (mandatory)**: `docs/CODE-GUIDELINES.md`
 - **Vision / product direction**: `docs/JARVIS-LIFE-OS-VISION.md`
 - **Progress / current focus**: `docs/progress.md`
+- **Adding new APIs (step‑by‑step guide)**: `docs/ADDING-APIS.md`
 
 If there is any conflict, follow **`docs/CODE_GUIDELINES.md`** for coding standards and ask for clarification only if requirements are truly ambiguous.
 
@@ -20,6 +21,7 @@ If there is any conflict, follow **`docs/CODE_GUIDELINES.md`** for coding standa
 - **Keep changes minimal and focused**: don't refactor unrelated code while implementing a feature/fix.
 - **Avoid repetition**: extract reusable functions/packages when logic is repeated.
 - **Write tests for non-trivial changes** (especially bug fixes and core logic), per `docs/CODE_GUIDELINES.md`.
+- **Document lessons learned before finishing a task**: Before completing any task, analyze what went wrong, identify patterns or gotchas that could cause problems for future work, and document them in the "Lessons learned" section at the bottom of this file. Update `docs/progress.md` with a summary. This step is as important as writing tests.
 
 ## Updating docs from feedback (required)
 
@@ -43,8 +45,8 @@ All API responses use the unified `Response[DataType any]` envelope from `contro
 - Use `SuccessResponse(c, statusCode, data, meta)` for success responses
 - Use `ErrorResponse(c, statusCode, message)` for error responses
 - Never call `c.Status(N).JSON(...)` directly
-- Delete endpoints return 200 with `{"data": null}`, not 204 No Content
-- See `docs/CODE-GUIDELINES.md` for the full pattern guide
+- Delete endpoints return `SuccessResponse[any](c, fiber.StatusOK, nil, nil)`, not 204 No Content
+- See `controllers/note.go` for a real example of the correct pattern
 
 ## Documenting learned facts (required)
 
@@ -83,3 +85,43 @@ The package-level doc comment in `controllers/doc.go` contains the API title, ve
 - **Keep errors actionable**: no silent failures; return meaningful error messages and structured HTTP responses.
 - **Match existing conventions** in the touched area unless improving consistency is explicitly requested.
 - **Layered architecture**: controllers → services → repositories → models. Keep the dependency direction clean.
+
+---
+
+## Lessons learned
+
+This section records gotchas, quirks, and hard-won knowledge from past work so future agents (and humans) don't repeat the same mistakes.
+
+### Soft-delete & trash patterns
+
+Most models embed `Base` which includes `gorm.DeletedAt`. This enables GORM's soft-delete feature:
+- `Delete()` sets `deleted_at` — the row still exists but is hidden from normal queries.
+- `Get*` / `Find*` queries automatically filter `WHERE deleted_at IS NULL`.
+- To query soft-deleted rows (trash): use `db.Unscoped().Where("deleted_at IS NOT NULL").Find(&items)`.
+- To hard-delete (permanent): use `db.Unscoped().Delete(&model)` — this removes the row entirely.
+- To restore a soft-deleted row: use `db.Unscoped().Model(&model).Update("deleted_at", nil)`.
+- See `repositories/note.go` for a reference implementation of `GetTrashNotes`, `RestoreNote`, `PermanentDeleteNote`.
+
+### GORM operations reference
+
+- `Unscoped().Delete()` with a model that has `gorm.DeletedAt` performs a hard-delete (removes the row from the database).
+- `Unscoped().Where("deleted_at IS NOT NULL").Find()` retrieves soft-deleted rows.
+- `Unscoped().Model(&model).Update("deleted_at", nil)` restores a soft-deleted row by clearing the delete timestamp.
+
+### Route ordering (Fiber)
+
+Fiber's router matches routes in the order they are registered. If a parameterized route (e.g., `/:id`) is registered BEFORE a static sub-path (e.g., `/trash`), the router may incorrectly match `trash` as the `:id` parameter.
+
+**Rule**: Always register static sub-paths BEFORE parameterized paths with the same prefix. For example, register `/v1/notes/trash` BEFORE `/v1/notes/:id`.
+
+See `router/router.go` for the established pattern — trash routes are registered before the `noteID` group. Also see `docs/ADDING-APIS.md` Step 4 for the full explanation.
+
+### Test helper gotchas
+
+- Test helpers (`DecodeResponseData`, `BeginTx`, `newTestApp`, `PerformRequest`) live in `task_test.go`. New test files in the `controllers_test` package can call them directly.
+- `DecodeResponseData` passes the `target` argument to `json.Unmarshal`. Pass a concrete pointer (e.g., `&models.Note{}`), not `nil`, unless you only care about the response envelope. If you pass `nil`, the data field won't be decoded.
+- **Checking for null data in tests**: `env.Data` is `json.RawMessage`. JSON `null` serializes to `[]byte("null")` — a non-nil byte slice. Check with `string(env.Data) != "null"`, not `env.Data != nil`.
+
+### Controller code examples in docs must use Response helpers
+
+The `docs/ADDING-APIS.md` guide has example controller code. Those examples must use `SuccessResponse` and `ErrorResponse` from `controllers/response.go`, NOT `c.Status(...).JSON(...)`. If updating that document, reference `controllers/note.go` for the correct pattern.

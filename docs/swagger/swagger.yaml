@@ -624,6 +624,73 @@ paths:
       summary: Update a note
       tags:
       - Notes
+  /notes/trash:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-array_models_Note'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: List trashed notes
+      tags:
+      - Notes
+  /notes/trash/{id}:
+    delete:
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Permanently delete a note
+      tags:
+      - Notes
+    patch:
+      parameters:
+      - description: Note ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-models_Note'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Restore a trashed note
+      tags:
+      - Notes
   /tags:
     get:
       produces:

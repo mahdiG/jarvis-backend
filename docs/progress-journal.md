@@ -102,3 +102,13 @@ Replace openAPI with swaggo (has dashboard). Upgrade fiber to version 3 (I thoug
 
 May 19 - 13:00
 Create unified api response type
+
+May 23 - 17:18
+Added trash APIs for notes (GetTrashNotes, RestoreNote, PermanentDeleteNote) and documented gotchas:
+
+Key lessons learned (documented in AGENTS.md and docs/ADDING-APIS.md):
+
+1. **Route ordering (Fiber)**: Static sub-paths like `/trash` must be registered BEFORE parameterized paths like `/:id` — otherwise Fiber matches `trash` as the `:id` parameter.
+2. **Soft-delete GORM patterns**: Documented how to query trashed items (`Unscoped().Where("deleted_at IS NOT NULL")`), restore (`Update("deleted_at", nil)`), and permanently delete (`Unscoped().Delete()`).
+3. **Test helper gotchas**: `DecodeResponseData` needs a concrete pointer (not nil). JSON null check in tests must use `string(env.Data) != "null"` not `env.Data != nil` since `json.RawMessage` from null is a non-nil byte slice.
+4. **GORM hard-delete**: `Unscoped().Delete()` with a model that has `gorm.DeletedAt` actually removes the row from the database.
