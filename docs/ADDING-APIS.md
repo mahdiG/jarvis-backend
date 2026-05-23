@@ -220,11 +220,9 @@ func GetHabits(c *fiber.Ctx) error {
     habits, err := repositories.GetHabits(0, 0)
     if err != nil {
         slog.Error("failed to get habits", "error", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "failed to get habits from db",
-        })
+        return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get habits from db")
     }
-    return c.JSON(habits)
+    return SuccessResponse(c, fiber.StatusOK, habits, nil)
 }
 
 func GetHabit(c *fiber.Ctx) error {
@@ -232,16 +230,12 @@ func GetHabit(c *fiber.Ctx) error {
     habit, err := repositories.GetHabit(models.Habit{Base: models.Base{ID: models.UID(id)}})
     if err != nil {
         if errors.Is(err, repositories.ErrRecordNotFound) {
-            return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-                "error": "habit not found",
-            })
+            return ErrorResponse(c, fiber.StatusNotFound, "habit not found")
         }
         slog.Error("failed to get habit", "id", id, "error", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "failed to get habit from db",
-        })
+        return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get habit from db")
     }
-    return c.JSON(habit)
+    return SuccessResponse(c, fiber.StatusOK, habit, nil)
 }
 
 func CreateHabit(c *fiber.Ctx) error {
@@ -252,11 +246,9 @@ func CreateHabit(c *fiber.Ctx) error {
     habit, err := repositories.CreateHabit(habit)
     if err != nil {
         slog.Error("failed to create habit", "error", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "failed to create habit in db",
-        })
+        return ErrorResponse(c, fiber.StatusInternalServerError, "failed to create habit in db")
     }
-    return c.Status(fiber.StatusCreated).JSON(habit)
+    return SuccessResponse(c, fiber.StatusCreated, habit, nil)
 }
 
 func UpdateHabit(c *fiber.Ctx) error {
@@ -269,16 +261,12 @@ func UpdateHabit(c *fiber.Ctx) error {
     habit, err := repositories.UpdateHabit(input)
     if err != nil {
         if errors.Is(err, repositories.ErrRecordNotFound) {
-            return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-                "error": "habit not found",
-            })
+            return ErrorResponse(c, fiber.StatusNotFound, "habit not found")
         }
         slog.Error("failed to update habit", "id", id, "error", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "failed to update habit",
-        })
+        return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update habit")
     }
-    return c.JSON(habit)
+    return SuccessResponse(c, fiber.StatusOK, habit, nil)
 }
 
 func DeleteHabit(c *fiber.Ctx) error {
@@ -286,22 +274,18 @@ func DeleteHabit(c *fiber.Ctx) error {
     err := repositories.DeleteHabit(models.Habit{Base: models.Base{ID: models.UID(id)}})
     if err != nil {
         if errors.Is(err, repositories.ErrRecordNotFound) {
-            return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-                "error": "habit not found",
-            })
+            return ErrorResponse(c, fiber.StatusNotFound, "habit not found")
         }
         slog.Error("failed to delete habit", "id", id, "error", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "failed to delete habit",
-        })
+        return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete habit")
     }
-    return c.SendStatus(fiber.StatusNoContent)
+    return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
 }
 ```
 
 ### What to compare against
 
-See `controllers/task.go` — the controller functions follow an identical structure.
+See `controllers/note.go` — the controller functions follow the correct pattern with `SuccessResponse` and `ErrorResponse`.
 
 ---
 
@@ -507,7 +491,7 @@ func TestMain(m *testing.M) {
 | `GET /:id`    | `GetHabit`    | `GetHabit(condition)`      | `models.Habit`       |
 | `POST /`      | `CreateHabit` | `CreateHabit(habit)`       | `models.Habit` (201) |
 | `PATCH /:id`  | `UpdateHabit` | `UpdateHabit(habit)`       | `models.Habit`       |
-| `DELETE /:id` | `DeleteHabit` | `DeleteHabit(condition)`   | (204)                |
+| `DELETE /:id` | `DeleteHabit` | `DeleteHabit(condition)`   | (200)                |
 
 ### HTTP Status Codes
 
