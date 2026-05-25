@@ -88,7 +88,6 @@ func CreateTasks(c fiber.Ctx) error {
 // @Param        body  body      []models.Task  true  "Tasks to update (each must include id)"
 // @Success      200  {object}  Response[any]
 // @Failure      400  {object}  Response[any]
-// @Failure      404  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
 // @Router       /tasks [patch]
 func UpdateTasks(c fiber.Ctx) error {
@@ -100,10 +99,6 @@ func UpdateTasks(c fiber.Ctx) error {
 
 	err := repositories.UpdateTasks(tasks)
 	if err != nil {
-		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return ErrorResponse(c, fiber.StatusNotFound, "one or more tasks not found")
-		}
-
 		slog.Error("failed to update tasks", "error", err)
 		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update tasks")
 	}

@@ -45,22 +45,19 @@ func CreateTasks(tasks []models.Task) ([]models.Task, error) {
 	return tasks, result.Error
 }
 
-// UpdateTasks performs a batch partial update on tasks including their Children.
-// Each task in the slice must have a non‑empty ID. If any task is not found the
-// entire update is rolled back and ErrRecordNotFound is returned.
+// UpdateTasks performs a batch partial update on tasks including their
+// associations (Tags, Children).  Uses GORM's Save() with FullSaveAssociations
+// so that zero values (0, nil, "") are correctly written to the database —
+// e.g. setting Score = 0 or DoneAt = nil to mark a task as undone.  If the
+// task does not exist it is created (upsert behaviour).
 func UpdateTasks(tasks []models.Task) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		for _, task := range tasks {
 			result := tx.
 				Session(&gorm.Session{FullSaveAssociations: true}).
-				Model(&models.Task{}).
-				Where("id = ?", task.ID).
-				Updates(&task)
+				Save(&task)
 			if result.Error != nil {
 				return result.Error
-			}
-			if result.RowsAffected == 0 {
-				return ErrRecordNotFound
 			}
 		}
 		return nil

@@ -95,12 +95,29 @@ This section records gotchas, quirks, and hard-won knowledge from past work so f
 ### Soft-delete & trash patterns
 
 Most models embed `Base` which includes `gorm.DeletedAt`. This enables GORM's soft-delete feature:
+
 - `Delete()` sets `deleted_at` — the row still exists but is hidden from normal queries.
 - `Get*` / `Find*` queries automatically filter `WHERE deleted_at IS NULL`.
 - To query soft-deleted rows (trash): use `db.Unscoped().Where("deleted_at IS NOT NULL").Find(&items)`.
 - To hard-delete (permanent): use `db.Unscoped().Delete(&model)` — this removes the row entirely.
 - To restore a soft-deleted row: use `db.Unscoped().Model(&model).Update("deleted_at", nil)`.
 - See `repositories/note.go` for a reference implementation of `GetTrashNotes`, `RestoreNote`, `PermanentDeleteNote`.
+
+### GORM zero-value updates with Save()
+
+GORM's `Updates(struct)` method **skips zero values** (`0`, `nil`, `""`, `false`). When a task needs to be marked as "undone" (e.g. setting `DoneAt` back to `nil`, or `Score` back to `0`), using `Updates(struct)` will silently ignore those fields.
+
+Instead, use `Save()` with `FullSaveAssociations`:
+
+```go
+tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(&task)
+```
+
+`Save()` internally sets `Select("*")`, which forces GORM to include all fields (including zero values) in the UPDATE SET clause. It also handles associations automatically.
+
+One side-effect: `Save()` on a task with a known ID that doesn't exist in the DB will **upsert** (create the row) rather than returning an error. This is acceptable for the task update use case.
+
+See `repositories/task.go` `UpdateTasks` for a reference implementation.
 
 ### GORM operations reference
 

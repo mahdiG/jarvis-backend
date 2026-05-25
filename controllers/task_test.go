@@ -398,26 +398,28 @@ func TestUpdateTasks_PartialUpdate(t *testing.T) {
 	}
 }
 
-func TestUpdateTasks_NotFound(t *testing.T) {
+func TestUpdateTasks_NotFoundIsUpsert(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/tasks", `[{"id":"nonexistent1","title":"Should fail"}]`)
+	// Save with a specific ID upserts — the task will be created, not rejected.
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks", `[{"id":"upserted1","title":"Created via upsert"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
-	if resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("expected status 404, got %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200 (upsert), got %d", resp.StatusCode)
 	}
 
-	env, err := DecodeResponseData(resp, nil)
+	// Verify the task was actually created.
+	task, err := repositories.GetTask(models.Task{Base: models.Base{ID: "upserted1"}})
 	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
+		t.Fatalf("expected upserted task to exist, got error: %v", err)
 	}
-	if env.Error == nil || env.Error.Message == "" {
-		t.Error("expected error message in response")
+	if task.Title != "Created via upsert" {
+		t.Errorf("expected title %q, got %q", "Created via upsert", task.Title)
 	}
 }
 
