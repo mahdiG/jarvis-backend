@@ -6,7 +6,8 @@ type Task struct {
 	Base
 	Title       string `gorm:"not null" validate:"required"`
 	Description string
-	ParentID    UID
+	ParentID    *UID
+	Children    []Task `gorm:"foreignkey:ParentID"`
 	// Target score for binary (done/undone) task is 1
 	TargetScore   float64 `gorm:"default:1" validate:"min=0"`
 	Score         float64 `gorm:"default:0"`

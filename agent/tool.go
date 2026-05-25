@@ -150,12 +150,12 @@ func executeToolCreateTask(_ context.Context, argumentsJSON string) (string, err
 		return "", utils.WrapError(errors.New("title is required"))
 	}
 
-	created, err := repositories.CreateTask(task)
+	created, err := repositories.CreateTasks([]models.Task{task})
 	if err != nil {
 		return "", utils.WrapError(err)
 	}
 
-	result, marshalError := json.Marshal(created)
+	result, marshalError := json.Marshal(created[0])
 	if marshalError != nil {
 		return "", utils.WrapError(marshalError)
 	}
@@ -225,12 +225,12 @@ func executeToolUpdateTask(_ context.Context, argumentsJSON string) (string, err
 		return "", utils.WrapError(errors.New("task ID is required for update"))
 	}
 
-	updated, err := repositories.UpdateTask(task)
+	err = repositories.UpdateTasks([]models.Task{task})
 	if err != nil {
 		return "", utils.WrapError(err)
 	}
 
-	result, marshalError := json.Marshal(updated)
+	result, marshalError := json.Marshal(task)
 	if marshalError != nil {
 		return "", utils.WrapError(marshalError)
 	}
@@ -250,7 +250,7 @@ func executeToolDeleteTask(_ context.Context, argumentsJSON string) (string, err
 		return "", utils.WrapError(errors.New("task ID is required for deletion"))
 	}
 
-	err = repositories.DeleteTask(condition)
+	err = repositories.SoftDeleteTasks([]models.UID{condition.ID})
 	if err != nil {
 		return "", utils.WrapError(err)
 	}

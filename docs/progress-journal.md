@@ -139,3 +139,12 @@ Key lessons learned (documented in AGENTS.md and docs/ADDING-APIS.md):
 2. **Soft-delete GORM patterns**: Documented how to query trashed items (`Unscoped().Where("deleted_at IS NOT NULL")`), restore (`Update("deleted_at", nil)`), and permanently delete (`Unscoped().Delete()`).
 3. **Test helper gotchas**: `DecodeResponseData` needs a concrete pointer (not nil). JSON null check in tests must use `string(env.Data) != "null"` not `env.Data != nil` since `json.RawMessage` from null is a non-nil byte slice.
 4. **GORM hard-delete**: `Unscoped().Delete()` with a model that has `gorm.DeletedAt` actually removes the row from the database.
+
+May 25 - 10:23
+Converted Task APIs from single-resource to batch operations (matching Notes pattern).
+- Replaced `CreateTask`, `UpdateTask`, `DeleteTask` with `CreateTasks`, `UpdateTasks`, `SoftDeleteTasks` in repository
+- Refactored controller handlers to accept/return arrays instead of single objects
+- Added trash/restore/hard-delete endpoints mirroring Notes: `GET /tasks/trash`, `PATCH /tasks/trash`, `DELETE /tasks/trash`
+- Updated router registration to match Notes route order (trash before `:id`)
+- Updated agent tool functions to use batch repository methods and return proper types
+- All 20 task tests pass alongside all existing tests

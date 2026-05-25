@@ -14,10 +14,13 @@ func Setup(app *fiber.App) {
 
 	tasks := v1.Group("/tasks")
 	tasks.Get("/", controllers.GetTasks)
-	tasks.Post("/", controllers.CreateTask)
+	tasks.Post("/", controllers.CreateTasks)
+	tasks.Patch("/", controllers.UpdateTasks)
+	tasks.Delete("/", controllers.SoftDeleteTasks)
+	tasks.Get("/trash", controllers.GetTrashTasks)
+	tasks.Patch("/trash", controllers.RestoreTasks)
+	tasks.Delete("/trash", controllers.HardDeleteTasks)
 	tasks.Get("/:id", controllers.GetTask)
-	tasks.Patch("/:id", controllers.UpdateTask)
-	tasks.Delete("/:id", controllers.DeleteTask)
 
 	tags := v1.Group("/tags")
 	tags.Get("/", controllers.GetTags)

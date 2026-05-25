@@ -2,14 +2,19 @@ package repositories
 
 import (
 	"jarvis/models"
+	"log/slog"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 func GetTasks(limit, offset int) ([]models.Task, error) {
 	var tasks []models.Task
 
-	query := db.Model(&models.Task{})
+	query := db.
+		Model(&models.Task{}).
+		Preload("Children.Children.Children").
+		Where("parent_id", nil)
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
@@ -26,42 +31,111 @@ func GetTask(condition models.Task) (models.Task, error) {
 
 	result := db.
 		Clauses(clause.Returning{}).
+		Preload("Children.Children.Children").
 		Where(&condition).
 		First(&task)
 
 	return task, result.Error
 }
 
-func CreateTask(task models.Task) (models.Task, error) {
-	result := db.Create(&task)
-	return task, result.Error
+func CreateTasks(tasks []models.Task) ([]models.Task, error) {
+	result := db.Create(&tasks)
+	return tasks, result.Error
 }
 
-func UpdateTask(task models.Task) (models.Task, error) {
-	result := db.
-		Clauses(clause.Returning{}).
-		Where("id = ?", task.ID).
-		Updates(&task)
+// UpdateTasks performs a batch partial update on tasks including their Children.
+// Each task in the slice must have a non‑empty ID. If any task is not found the
+// entire update is rolled back and ErrRecordNotFound is returned.
+func UpdateTasks(tasks []models.Task) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, task := range tasks {
+			result := tx.
+				Session(&gorm.Session{FullSaveAssociations: true}).
+				Model(&models.Task{}).
+				Where("id = ?", task.ID).
+				Updates(&task)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return ErrRecordNotFound
+			}
+		}
+		return nil
+	})
+}
+
+func GetTrashTasks(limit, offset int) ([]models.Task, error) {
+	var tasks []models.Task
+
+	query := db.Unscoped().Model(&models.Task{}).Where("deleted_at IS NOT NULL")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset > 0 {
+		query = query.Offset(offset)
+	}
+	result := query.
+		Preload("Children.Children.Children").
+		Find(&tasks)
+
+	return tasks, result.Error
+}
+
+// SoftDeleteTasks soft‑deletes the tasks with the given IDs. Non‑existent IDs
+// are silently ignored.
+func SoftDeleteTasks(ids []models.UID) error {
+	return db.Where("id IN ?", ids).Delete(&models.Task{}).Error
+}
+
+// RestoreTasks restores soft‑deleted tasks by ID and returns the restored tasks.
+// Returns ErrRecordNotFound if none of the IDs matched a soft‑deleted task.
+func RestoreTasks(ids []models.UID) ([]models.Task, error) {
+	result := db.Unscoped().
+		Model(&models.Task{}).
+		Where("id IN ? AND deleted_at IS NOT NULL", ids).
+		Update("deleted_at", nil)
 
 	if result.Error != nil {
-		return task, result.Error
+		return nil, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return task, ErrRecordNotFound
+		return nil, ErrRecordNotFound
 	}
-	return task, nil
+
+	var tasks []models.Task
+	err := db.
+		Preload("Children.Children.Children").
+		Where("id IN ?", ids).
+		Find(&tasks).Error
+	return tasks, err
 }
 
-func DeleteTask(condition models.Task) error {
-	result := db.
-		Where(&condition).
-		Delete(&models.Task{})
+// HardDeleteTasks permanently deletes tasks by ID (regardless of soft‑delete
+// status). Non‑existent IDs are silently ignored.
+func HardDeleteTasks(ids []models.UID) error {
+	slog.Debug("Hard delete tasks", "ids", ids)
+
+	var tasks []models.Task
+	result := db.Unscoped().
+		Where("id IN ?", ids).
+		Find(&tasks)
 
 	if result.Error != nil {
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return ErrRecordNotFound
+	if len(tasks) == 0 {
+		slog.Debug("no tasks to delete")
+		return nil
 	}
+
+	result = db.Unscoped().
+		Select("Tags").
+		Delete(&tasks)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
 	return nil
 }

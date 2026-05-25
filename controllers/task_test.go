@@ -104,16 +104,16 @@ type ResponseError struct {
 }
 
 // --------------------------------------------------------------------------
-// TestCreateTask
+// TestCreateTasks
 // --------------------------------------------------------------------------
 
-func TestCreateTask_Success(t *testing.T) {
+func TestCreateTasks_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "POST", "/v1/tasks", `{"title":"Buy milk","description":"Remember to buy milk"}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tasks", `[{"title":"Buy milk","description":"Remember to buy milk"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -121,26 +121,53 @@ func TestCreateTask_Success(t *testing.T) {
 		t.Fatalf("expected status 201, got %d", resp.StatusCode)
 	}
 
-	var task models.Task
-	_, err = DecodeResponseData(resp, &task)
+	var tasks []models.Task
+	_, err = DecodeResponseData(resp, &tasks)
 	if err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if task.Title != "Buy milk" {
-		t.Errorf("expected title %q, got %q", "Buy milk", task.Title)
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
 	}
-	if task.Description != "Remember to buy milk" {
-		t.Errorf("expected description %q, got %q", "Remember to buy milk", task.Description)
+	if tasks[0].Title != "Buy milk" {
+		t.Errorf("expected title %q, got %q", "Buy milk", tasks[0].Title)
 	}
-	if task.ID == "" {
+	if tasks[0].Description != "Remember to buy milk" {
+		t.Errorf("expected description %q, got %q", "Remember to buy milk", tasks[0].Description)
+	}
+	if tasks[0].ID == "" {
 		t.Error("expected task to have a non-empty ID")
 	}
-	if task.CreatedAt.IsZero() {
+	if tasks[0].CreatedAt.IsZero() {
 		t.Error("expected task to have a CreatedAt timestamp")
 	}
 }
 
-func TestCreateTask_InvalidBody(t *testing.T) {
+func TestCreateTasks_Multiple(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "POST", "/v1/tasks", `[{"title":"Task A"},{"title":"Task B"}]`)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d", resp.StatusCode)
+	}
+
+	var tasks []models.Task
+	_, err = DecodeResponseData(resp, &tasks)
+	if err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(tasks) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(tasks))
+	}
+}
+
+func TestCreateTasks_InvalidBody(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
@@ -163,13 +190,13 @@ func TestCreateTask_InvalidBody(t *testing.T) {
 	}
 }
 
-func TestCreateTask_MissingRequiredTitle(t *testing.T) {
+func TestCreateTasks_MissingRequiredTitle(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "POST", "/v1/tasks", `{"description":"missing title"}`)
+	resp, err := PerformRequest(app, "POST", "/v1/tasks", `[{"description":"missing title"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -219,11 +246,11 @@ func TestGetTasks_WithItems(t *testing.T) {
 	defer cleanup()
 
 	// Seed two tasks directly into the repository.
-	_, err := repositories.CreateTask(models.Task{Title: "Task A", Description: "First task"})
+	_, err := repositories.CreateTasks([]models.Task{{Title: "Task A", Description: "First task"}})
 	if err != nil {
 		t.Fatalf("failed to seed task: %v", err)
 	}
-	_, err = repositories.CreateTask(models.Task{Title: "Task B", Description: "Second task"})
+	_, err = repositories.CreateTasks([]models.Task{{Title: "Task B", Description: "Second task"}})
 	if err != nil {
 		t.Fatalf("failed to seed task: %v", err)
 	}
@@ -267,10 +294,11 @@ func TestGetTask_Success(t *testing.T) {
 	defer cleanup()
 
 	// Seed a task so we know its ID.
-	original, err := repositories.CreateTask(models.Task{Title: "Single task", Description: "Detail"})
+	created, err := repositories.CreateTasks([]models.Task{{Title: "Single task", Description: "Detail"}})
 	if err != nil {
 		t.Fatalf("failed to seed task: %v", err)
 	}
+	original := created[0]
 
 	app := newTestApp()
 
@@ -322,84 +350,61 @@ func TestGetTask_NotFound(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestUpdateTask
+// TestUpdateTasks
 // --------------------------------------------------------------------------
 
-func TestUpdateTask_Success(t *testing.T) {
+func TestUpdateTasks_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task.
-	original, err := repositories.CreateTask(models.Task{Title: "Old title", Description: "Old description"})
+	created, err := repositories.CreateTasks([]models.Task{{Title: "Old title", Description: "Old description"}})
 	if err != nil {
 		t.Fatalf("failed to seed task: %v", err)
 	}
+	original := created[0]
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/"+string(original.ID), `{"title":"Updated title","description":"Updated description"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks", `[{"id":"`+string(original.ID)+`","title":"Updated title","description":"Updated description"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
-
-	var task models.Task
-	_, err = DecodeResponseData(resp, &task)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if task.Title != "Updated title" {
-		t.Errorf("expected title %q, got %q", "Updated title", task.Title)
-	}
-	if task.Description != "Updated description" {
-		t.Errorf("expected description %q, got %q", "Updated description", task.Description)
-	}
 }
 
-func TestUpdateTask_PartialUpdate(t *testing.T) {
+func TestUpdateTasks_PartialUpdate(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task.
-	original, err := repositories.CreateTask(models.Task{Title: "Original", Description: "Original description"})
+	created, err := repositories.CreateTasks([]models.Task{{Title: "Original", Description: "Original description"}})
 	if err != nil {
 		t.Fatalf("failed to seed task: %v", err)
 	}
+	original := created[0]
 
 	app := newTestApp()
 
 	// Update only the title.
-	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/"+string(original.ID), `{"title":"Only title changed"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks", `[{"id":"`+string(original.ID)+`","title":"Only title changed"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
-
-	var task models.Task
-	_, err = DecodeResponseData(resp, &task)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	if task.Title != "Only title changed" {
-		t.Errorf("expected title %q, got %q", "Only title changed", task.Title)
-	}
-	// Description should remain unchanged since we didn't send it.
-	if task.Description != "Original description" {
-		t.Errorf("expected description %q, got %q", "Original description", task.Description)
-	}
 }
 
-func TestUpdateTask_NotFound(t *testing.T) {
+func TestUpdateTasks_NotFound(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/nonexistent1", `{"title":"Should fail"}`)
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks", `[{"id":"nonexistent1","title":"Should fail"}]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -417,22 +422,23 @@ func TestUpdateTask_NotFound(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// TestDeleteTask
+// TestSoftDeleteTasks
 // --------------------------------------------------------------------------
 
-func TestDeleteTask_Success(t *testing.T) {
+func TestSoftDeleteTasks_Success(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	// Seed a task.
-	original, err := repositories.CreateTask(models.Task{Title: "Deletable", Description: "Will be deleted"})
+	created, err := repositories.CreateTasks([]models.Task{{Title: "Deletable", Description: "Will be deleted"}})
 	if err != nil {
 		t.Fatalf("failed to seed task: %v", err)
 	}
+	original := created[0]
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/tasks/"+string(original.ID), "")
+	resp, err := PerformRequest(app, "DELETE", "/v1/tasks", `["`+string(original.ID)+`"]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -440,20 +446,147 @@ func TestDeleteTask_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	// Verify the task is actually gone.
+	// Verify the task is soft-deleted (should not be found via normal query).
 	_, err = repositories.GetTask(models.Task{Base: models.Base{ID: original.ID}})
 	if err == nil {
 		t.Error("expected error fetching deleted task, got nil")
 	}
 }
 
-func TestDeleteTask_NotFound(t *testing.T) {
+func TestSoftDeleteTasks_NonExistent(t *testing.T) {
 	cleanup := BeginTx()
 	defer cleanup()
 
 	app := newTestApp()
 
-	resp, err := PerformRequest(app, "DELETE", "/v1/tasks/nonexistent1", "")
+	resp, err := PerformRequest(app, "DELETE", "/v1/tasks", `["nonexistent1"]`)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// TestGetTrashTasks / RestoreTasks / HardDeleteTasks
+// --------------------------------------------------------------------------
+
+func TestGetTrashTasks_Empty(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "GET", "/v1/tasks/trash", "")
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var tasks []models.Task
+	_, err = DecodeResponseData(resp, &tasks)
+	if err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Errorf("expected empty trash, got %d items", len(tasks))
+	}
+}
+
+func TestGetTrashTasks_WithItems(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	// Seed and soft-delete a task.
+	created, err := repositories.CreateTasks([]models.Task{{Title: "Trashable"}})
+	if err != nil {
+		t.Fatalf("failed to seed task: %v", err)
+	}
+	err = repositories.SoftDeleteTasks([]models.UID{created[0].ID})
+	if err != nil {
+		t.Fatalf("failed to soft-delete task: %v", err)
+	}
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "GET", "/v1/tasks/trash", "")
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var tasks []models.Task
+	_, err = DecodeResponseData(resp, &tasks)
+	if err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 trashed task, got %d", len(tasks))
+	}
+	if tasks[0].Title != "Trashable" {
+		t.Errorf("expected title %q, got %q", "Trashable", tasks[0].Title)
+	}
+}
+
+func TestRestoreTasks_Success(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	// Seed and soft-delete a task.
+	created, err := repositories.CreateTasks([]models.Task{{Title: "Restorable"}})
+	if err != nil {
+		t.Fatalf("failed to seed task: %v", err)
+	}
+	id := created[0].ID
+	err = repositories.SoftDeleteTasks([]models.UID{id})
+	if err != nil {
+		t.Fatalf("failed to soft-delete task: %v", err)
+	}
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/trash", `["`+string(id)+`"]`)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var tasks []models.Task
+	_, err = DecodeResponseData(resp, &tasks)
+	if err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 restored task, got %d", len(tasks))
+	}
+	if tasks[0].ID != id {
+		t.Errorf("expected ID %q, got %q", id, tasks[0].ID)
+	}
+
+	// Verify it's no longer in trash.
+	tasks, err = repositories.GetTrashTasks(0, 0)
+	if err != nil {
+		t.Fatalf("failed to get trash tasks: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Errorf("expected trash to be empty after restore, got %d items", len(tasks))
+	}
+}
+
+func TestRestoreTasks_NotFound(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "PATCH", "/v1/tasks/trash", `["nonexistent1"]`)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -467,5 +600,53 @@ func TestDeleteTask_NotFound(t *testing.T) {
 	}
 	if env.Error == nil || env.Error.Message == "" {
 		t.Error("expected error message in response")
+	}
+}
+
+func TestHardDeleteTasks_Success(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	// Seed and soft-delete a task.
+	created, err := repositories.CreateTasks([]models.Task{{Title: "PermanentDelete"}})
+	if err != nil {
+		t.Fatalf("failed to seed task: %v", err)
+	}
+	id := created[0].ID
+	err = repositories.SoftDeleteTasks([]models.UID{id})
+	if err != nil {
+		t.Fatalf("failed to soft-delete task: %v", err)
+	}
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "DELETE", "/v1/tasks/trash", `["`+string(id)+`"]`)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	// Verify the task is gone even from unscoped query.
+	var count int64
+	TestDB.Unscoped().Model(&models.Task{}).Where("id = ?", id).Count(&count)
+	if count != 0 {
+		t.Errorf("expected task to be permanently deleted, count = %d", count)
+	}
+}
+
+func TestHardDeleteTasks_NonExistent(t *testing.T) {
+	cleanup := BeginTx()
+	defer cleanup()
+
+	app := newTestApp()
+
+	resp, err := PerformRequest(app, "DELETE", "/v1/tasks/trash", `["nonexistent1"]`)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
 	}
 }

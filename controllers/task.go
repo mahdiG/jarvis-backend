@@ -54,87 +54,158 @@ func GetTask(c fiber.Ctx) error {
 	return SuccessResponse(c, fiber.StatusOK, task, nil)
 }
 
-// CreateTask creates a new task
-// @Summary      Create a task
+// CreateTasks creates multiple tasks
+// @Summary      Create tasks
 // @Tags         Tasks
 // @Accept       json
 // @Produce      json
-// @Param        body  body      models.Task  true  "Task to create"
-// @Success      201  {object}  Response[models.Task]
+// @Param        body  body      []models.Task  true  "Tasks to create"
+// @Success      201  {object}  Response[[]models.Task]
 // @Failure      400  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
 // @Router       /tasks [post]
-func CreateTask(c fiber.Ctx) error {
-	var task models.Task
+func CreateTasks(c fiber.Ctx) error {
+	var tasks []models.Task
 
-	if !Validate(c, &task) {
+	if !Validate(c, &tasks) {
 		return nil
 	}
 
-	task, err := repositories.CreateTask(task)
+	created, err := repositories.CreateTasks(tasks)
 	if err != nil {
-		slog.Error("failed to create task", "error", err)
-		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to create task in db")
+		slog.Error("failed to create tasks", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to create tasks in db")
 	}
 
-	return SuccessResponse(c, fiber.StatusCreated, task, nil)
+	return SuccessResponse(c, fiber.StatusCreated, created, nil)
 }
 
-// UpdateTask updates an existing task (partial update)
-// @Summary      Update a task
+// UpdateTasks performs a batch partial update on tasks
+// @Summary      Update tasks
 // @Tags         Tasks
 // @Accept       json
 // @Produce      json
-// @Param        id    path      string       true  "Task ID"
-// @Param        body  body      models.Task  true  "Updated task fields"
-// @Success      200  {object}  Response[models.Task]
+// @Param        body  body      []models.Task  true  "Tasks to update (each must include id)"
+// @Success      200  {object}  Response[any]
 // @Failure      400  {object}  Response[any]
 // @Failure      404  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
-// @Router       /tasks/{id} [patch]
-func UpdateTask(c fiber.Ctx) error {
-	id := c.Params("id")
+// @Router       /tasks [patch]
+func UpdateTasks(c fiber.Ctx) error {
+	var tasks []models.Task
 
-	var input models.Task
-	if !Validate(c, &input) {
+	if !Validate(c, &tasks) {
 		return nil
 	}
 
-	input.ID = models.UID(id)
-
-	task, err := repositories.UpdateTask(input)
+	err := repositories.UpdateTasks(tasks)
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return ErrorResponse(c, fiber.StatusNotFound, "task not found")
+			return ErrorResponse(c, fiber.StatusNotFound, "one or more tasks not found")
 		}
 
-		slog.Error("failed to update task", "id", id, "error", err)
-		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update task")
+		slog.Error("failed to update tasks", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to update tasks")
 	}
 
-	return SuccessResponse(c, fiber.StatusOK, task, nil)
+	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
 }
 
-// DeleteTask deletes a task by its ID
-// @Summary      Delete a task
+// GetTrashTasks returns all soft-deleted tasks
+// @Summary      List trashed tasks
 // @Tags         Tasks
 // @Produce      json
-// @Param        id   path      string  true  "Task ID"
-// @Success      200  {object}  Response[any]
+// @Success      200  {object}  Response[[]models.Task]
+// @Failure      500  {object}  Response[any]
+// @Router       /tasks/trash [get]
+func GetTrashTasks(c fiber.Ctx) error {
+	tasks, err := repositories.GetTrashTasks(0, 0)
+	if err != nil {
+		slog.Error("failed to get trashed tasks", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to get trashed tasks from db")
+	}
+
+	return SuccessResponse(c, fiber.StatusOK, tasks, nil)
+}
+
+// RestoreTasks restores soft-deleted tasks by their IDs
+// @Summary      Restore trashed tasks
+// @Tags         Tasks
+// @Accept       json
+// @Produce      json
+// @Param        body  body      []string  true  "Task IDs to restore"
+// @Success      200  {object}  Response[[]models.Task]
+// @Failure      400  {object}  Response[any]
 // @Failure      404  {object}  Response[any]
 // @Failure      500  {object}  Response[any]
-// @Router       /tasks/{id} [delete]
-func DeleteTask(c fiber.Ctx) error {
-	id := c.Params("id")
+// @Router       /tasks/trash [patch]
+func RestoreTasks(c fiber.Ctx) error {
+	var ids []models.UID
 
-	err := repositories.DeleteTask(models.Task{Base: models.Base{ID: models.UID(id)}})
+	if !Validate(c, &ids) {
+		return nil
+	}
+
+	tasks, err := repositories.RestoreTasks(ids)
 	if err != nil {
 		if errors.Is(err, repositories.ErrRecordNotFound) {
-			return ErrorResponse(c, fiber.StatusNotFound, "task not found")
+			return ErrorResponse(c, fiber.StatusNotFound, "no matching tasks found in trash")
 		}
 
-		slog.Error("failed to delete task", "id", id, "error", err)
-		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete task")
+		slog.Error("failed to restore tasks", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to restore tasks")
+	}
+
+	return SuccessResponse(c, fiber.StatusOK, tasks, nil)
+}
+
+// HardDeleteTasks permanently deletes tasks by their IDs
+// @Summary      Permanently delete tasks
+// @Tags         Tasks
+// @Accept       json
+// @Produce      json
+// @Param        body  body      []string  true  "Task IDs to permanently delete"
+// @Success      200  {object}  Response[any]
+// @Failure      400  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
+// @Router       /tasks/trash [delete]
+func HardDeleteTasks(c fiber.Ctx) error {
+	var ids []models.UID
+
+	if !Validate(c, &ids) {
+		return nil
+	}
+
+	err := repositories.HardDeleteTasks(ids)
+	if err != nil {
+		slog.Error("failed to permanently delete tasks", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to permanently delete tasks")
+	}
+
+	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
+}
+
+// SoftDeleteTasks soft-deletes tasks by their IDs
+// @Summary      Delete tasks
+// @Tags         Tasks
+// @Accept       json
+// @Produce      json
+// @Param        body  body      []string  true  "Task IDs to delete"
+// @Success      200  {object}  Response[any]
+// @Failure      400  {object}  Response[any]
+// @Failure      500  {object}  Response[any]
+// @Router       /tasks [delete]
+func SoftDeleteTasks(c fiber.Ctx) error {
+	var ids []models.UID
+
+	if !Validate(c, &ids) {
+		return nil
+	}
+
+	err := repositories.SoftDeleteTasks(ids)
+	if err != nil {
+		slog.Error("failed to delete tasks", "error", err)
+		return ErrorResponse(c, fiber.StatusInternalServerError, "failed to delete tasks")
 	}
 
 	return SuccessResponse[any](c, fiber.StatusOK, nil, nil)
