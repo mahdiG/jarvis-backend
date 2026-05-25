@@ -13,6 +13,7 @@ func GetTasks(limit, offset int) ([]models.Task, error) {
 
 	query := db.
 		Model(&models.Task{}).
+		Preload("Tags").
 		Preload("Children.Children.Children").
 		Where("parent_id", nil)
 	if limit > 0 {
@@ -31,6 +32,7 @@ func GetTask(condition models.Task) (models.Task, error) {
 
 	result := db.
 		Clauses(clause.Returning{}).
+		Preload("Tags").
 		Preload("Children.Children.Children").
 		Where(&condition).
 		First(&task)
@@ -68,7 +70,7 @@ func UpdateTasks(tasks []models.Task) error {
 func GetTrashTasks(limit, offset int) ([]models.Task, error) {
 	var tasks []models.Task
 
-	query := db.Unscoped().Model(&models.Task{}).Where("deleted_at IS NOT NULL")
+	query := db.Model(&models.Task{})
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
@@ -76,6 +78,9 @@ func GetTrashTasks(limit, offset int) ([]models.Task, error) {
 		query = query.Offset(offset)
 	}
 	result := query.
+		Unscoped().
+		Where("deleted_at IS NOT NULL").
+		Preload("Tags").
 		Preload("Children.Children.Children").
 		Find(&tasks)
 
