@@ -1,3 +1,9 @@
+## swagger generate command
+
+```bash
+swag init --output docs/swagger --generalInfo controllers/doc.go --parseDependency
+```
+
 curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "Create a task called Buy groceries with description Remember to buy milk and eggs"}]}'
 
 artifex@flow:~/code/jarvis/jarvis-backend$ curl -X POST http://localhost:3000/v1/chat -H "Content-Type: application/json" -d '{"messages": [{"role": "user", "content": "Create task parentA and task childA thats a

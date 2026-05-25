@@ -6,12 +6,12 @@ This document describes the step-by-step process for adding a new REST API resou
 
 ---
 
-## Overview: The 5-Step Workflow
+## Overview: The 6-Step Workflow
 
 Every new resource follows the same pipeline:
 
 ```
-Model → Repository → Controller → Router → Tests
+Model → Repository → Controller → Router → Tests → Swagger Docs
             ↕
         (auto-migrate)
 ```
@@ -21,6 +21,13 @@ Model → Repository → Controller → Router → Tests
 3. **Controller** — write HTTP handlers in `controllers/`.
 4. **Router** — register routes in `router/router.go`.
 5. **Tests** — write controller tests in `controllers/`.
+6. **Swagger** — regenerate API documentation (see box below).
+
+> **Regenerate swagger docs whenever handler signatures, request bodies, or response types change:**
+> ```bash
+> swag init --output docs/swagger --generalInfo controllers/doc.go --parseDependency
+> ```
+> This regenerates `docs/swagger/swagger.json` and `docs/swagger/swagger.yaml` from the swaggo annotations in your controller files. The generated files are gitignored (`docs/docs.go` and `docs/swagger.*` are in `.gitignore`), so they won't be committed.
 
 The following sections walk through each step using a new **Habit** resource as the running example.
 
@@ -540,5 +547,6 @@ Before considering a new API done, verify each item:
 - [ ] Controller file created in `controllers/` with all HTTP handlers.
 - [ ] Routes registered in `router/router.go` under `/v1`.
 - [ ] Test file created in `controllers/` with success and error path tests.
+- [ ] Swagger docs regenerated (`swag init --output docs/swagger --generalInfo controllers/doc.go --parseDependency`).
 - [ ] Application compiles (`go build ./...`).
 - [ ] Tests pass (`go test ./...`).

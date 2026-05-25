@@ -254,6 +254,10 @@ definitions:
     type: object
   models.Task:
     properties:
+      children:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
       createdAt:
         type: string
       deletedAt:
@@ -845,6 +849,36 @@ paths:
       tags:
       - Tags
   /tasks:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task IDs to delete
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Delete tasks
+      tags:
+      - Tasks
     get:
       produces:
       - application/json
@@ -860,47 +894,27 @@ paths:
       summary: List all tasks
       tags:
       - Tasks
-    post:
+    patch:
       consumes:
       - application/json
       parameters:
-      - description: Task to create
+      - description: Tasks to update (each must include id)
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Task'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/controllers.Response-models_Task'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-      summary: Create a task
-      tags:
-      - Tasks
-  /tasks/{id}:
-    delete:
-      parameters:
-      - description: Task ID
-        in: path
-        name: id
-        required: true
-        type: string
+          items:
+            $ref: '#/definitions/models.Task'
+          type: array
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/controllers.Response-any'
         "404":
@@ -911,9 +925,40 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/controllers.Response-any'
-      summary: Delete a task
+      summary: Update tasks
       tags:
       - Tasks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tasks to create
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.Task'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controllers.Response-array_models_Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Create tasks
+      tags:
+      - Tasks
+  /tasks/{id}:
     get:
       parameters:
       - description: Task ID
@@ -939,28 +984,71 @@ paths:
       summary: Get a task
       tags:
       - Tasks
-    patch:
+  /tasks/trash:
+    delete:
       consumes:
       - application/json
       parameters:
-      - description: Task ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Updated task fields
+      - description: Task IDs to permanently delete
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Task'
+          items:
+            type: string
+          type: array
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controllers.Response-models_Task'
+            $ref: '#/definitions/controllers.Response-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: Permanently delete tasks
+      tags:
+      - Tasks
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-array_models_Task'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.Response-any'
+      summary: List trashed tasks
+      tags:
+      - Tasks
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Task IDs to restore
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.Response-array_models_Task'
         "400":
           description: Bad Request
           schema:
@@ -973,7 +1061,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/controllers.Response-any'
-      summary: Update a task
+      summary: Restore trashed tasks
       tags:
       - Tasks
 swagger: "2.0"
