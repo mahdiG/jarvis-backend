@@ -4,7 +4,6 @@ import (
 	"jarvis/models"
 	"log/slog"
 
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -52,23 +51,13 @@ func CreateTasks(tasks []models.Task) ([]models.Task, error) {
 	return tasks, result.Error
 }
 
-// UpdateTasks performs a batch partial update on tasks including their
-// associations (Tags, Subtasks).  Uses GORM's Save() with FullSaveAssociations
-// so that zero values (0, nil, "") are correctly written to the database —
-// e.g. setting Score = 0 or DoneAt = nil to mark a task as undone.  If the
-// task does not exist it is created (upsert behaviour).
 func UpdateTasks(tasks []models.Task) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		for _, task := range tasks {
-			result := tx.
-				Session(&gorm.Session{FullSaveAssociations: true}).
-				Save(&task)
-			if result.Error != nil {
-				return result.Error
-			}
-		}
-		return nil
-	})
+	result := db.Save(&tasks)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
 
 func GetTrashTasks(limit, offset int) ([]models.Task, error) {

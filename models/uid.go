@@ -58,11 +58,13 @@ type Base struct {
 // BeforeCreate generates a UID. This sets ID even if ID already has value. Because client might send IDs for creating
 // This breaks seeding. You can do gorm SkipHooks if you want to seed. Make sure to set ID, CreatedAt etc because they'll be skipped
 func (b *Base) BeforeCreate(_ *gorm.DB) error {
-	id, err := NewUID()
-	if err != nil {
-		return err
+	if b.ID == "" {
+		id, err := NewUID()
+		if err != nil {
+			return err
+		}
+		b.ID = id
 	}
-	b.ID = id
 
 	return nil
 }
