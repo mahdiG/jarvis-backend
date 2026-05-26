@@ -254,10 +254,6 @@ definitions:
     type: object
   models.Task:
     properties:
-      children:
-        items:
-          $ref: '#/definitions/models.Task'
-        type: array
       createdAt:
         type: string
       deletedAt:
@@ -278,6 +274,10 @@ definitions:
         type: number
       scoreUnit:
         type: string
+      subtasks:
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
       tags:
         items:
           $ref: '#/definitions/models.Tag'
@@ -915,10 +915,6 @@ paths:
             $ref: '#/definitions/controllers.Response-any'
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/controllers.Response-any'
-        "404":
-          description: Not Found
           schema:
             $ref: '#/definitions/controllers.Response-any'
         "500":

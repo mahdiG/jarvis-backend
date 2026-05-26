@@ -1010,12 +1010,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/controllers.Response-any"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Response-any"
-                        }
-                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1574,12 +1568,6 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
-                "children": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Task"
-                    }
-                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -1609,6 +1597,12 @@ const docTemplate = `{
                 },
                 "scoreUnit": {
                     "type": "string"
+                },
+                "subtasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Task"
+                    }
                 },
                 "tags": {
                     "type": "array",

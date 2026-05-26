@@ -139,6 +139,30 @@ See `router/router.go` for the established pattern — trash routes are register
 - `DecodeResponseData` passes the `target` argument to `json.Unmarshal`. Pass a concrete pointer (e.g., `&models.Note{}`), not `nil`, unless you only care about the response envelope. If you pass `nil`, the data field won't be decoded.
 - **Checking for null data in tests**: `env.Data` is `json.RawMessage`. JSON `null` serializes to `[]byte("null")` — a non-nil byte slice. Check with `string(env.Data) != "null"`, not `env.Data != nil`.
 
+### UID.Scan must handle multiple incoming types
+
+`UID` is a custom type backed by `string`. GORM's association saving callbacks (e.g., `SaveAfterAssociations` for many2many relations like `Tags`) may pass values to `Scan` that are already `models.UID`, not `string`. The naive type assertion `value.(string)` panics.
+
+**Fix**: Use a type switch in `Scan` to handle `string`, `[]byte`, and `UID`:
+
+```go
+func (u *UID) Scan(value any) error {
+    switch v := value.(type) {
+    case string:
+        *u = UID(v)
+    case []byte:
+        *u = UID(v)
+    case UID:
+        *u = v
+    default:
+        return fmt.Errorf("cannot scan type %T into UID", value)
+    }
+    return nil
+}
+```
+
+See `models/uid.go` for the reference implementation.
+
 ### Controller code examples in docs must use Response helpers
 
 The `docs/ADDING-APIS.md` guide has example controller code. Those examples must use `SuccessResponse` and `ErrorResponse` from `controllers/response.go`, NOT `c.Status(...).JSON(...)`. If updating that document, reference `controllers/note.go` for the correct pattern.

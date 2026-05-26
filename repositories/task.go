@@ -8,13 +8,17 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+func getSubtasksPreloadString() string {
+	return "Subtasks.Subtasks.Subtasks.Subtasks"
+}
+
 func GetTasks(limit, offset int) ([]models.Task, error) {
 	var tasks []models.Task
 
 	query := db.
 		Model(&models.Task{}).
 		Preload("Tags").
-		Preload("Children.Children.Children").
+		Preload(getSubtasksPreloadString()).
 		Where("parent_id", nil)
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -33,7 +37,7 @@ func GetTask(condition models.Task) (models.Task, error) {
 	result := db.
 		Clauses(clause.Returning{}).
 		Preload("Tags").
-		Preload("Children.Children.Children").
+		Preload(getSubtasksPreloadString()).
 		Where(&condition).
 		First(&task)
 
@@ -41,12 +45,15 @@ func GetTask(condition models.Task) (models.Task, error) {
 }
 
 func CreateTasks(tasks []models.Task) ([]models.Task, error) {
-	result := db.Create(&tasks)
+	result := db.
+		Clauses(clause.Returning{}).
+		Preload(getSubtasksPreloadString()).
+		Save(&tasks)
 	return tasks, result.Error
 }
 
 // UpdateTasks performs a batch partial update on tasks including their
-// associations (Tags, Children).  Uses GORM's Save() with FullSaveAssociations
+// associations (Tags, Subtasks).  Uses GORM's Save() with FullSaveAssociations
 // so that zero values (0, nil, "") are correctly written to the database —
 // e.g. setting Score = 0 or DoneAt = nil to mark a task as undone.  If the
 // task does not exist it is created (upsert behaviour).
@@ -78,7 +85,7 @@ func GetTrashTasks(limit, offset int) ([]models.Task, error) {
 		Unscoped().
 		Where("deleted_at IS NOT NULL").
 		Preload("Tags").
-		Preload("Children.Children.Children").
+		Preload(getSubtasksPreloadString()).
 		Find(&tasks)
 
 	return tasks, result.Error
@@ -107,7 +114,7 @@ func RestoreTasks(ids []models.UID) ([]models.Task, error) {
 
 	var tasks []models.Task
 	err := db.
-		Preload("Children.Children.Children").
+		Preload(getSubtasksPreloadString()).
 		Where("id IN ?", ids).
 		Find(&tasks).Error
 	return tasks, err

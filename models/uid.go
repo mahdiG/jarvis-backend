@@ -2,6 +2,7 @@ package models
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -34,7 +35,16 @@ func (u UID) String() string {
 
 // Scan implements the sql.Scanner interface for UID.
 func (u *UID) Scan(value any) error {
-	*u = UID(value.(string))
+	switch v := value.(type) {
+	case string:
+		*u = UID(v)
+	case []byte:
+		*u = UID(v)
+	case UID:
+		*u = v
+	default:
+		return fmt.Errorf("cannot scan type %T into UID", value)
+	}
 	return nil
 }
 
