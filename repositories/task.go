@@ -4,6 +4,7 @@ import (
 	"jarvis/models"
 	"log/slog"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -52,7 +53,9 @@ func CreateTasks(tasks []models.Task) ([]models.Task, error) {
 }
 
 func UpdateTasks(tasks []models.Task) error {
-	result := db.Save(&tasks)
+	result := db.
+		Session(&gorm.Session{FullSaveAssociations: true}).
+		Save(&tasks)
 	if result.Error != nil {
 		return result.Error
 	}
