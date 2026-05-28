@@ -2,7 +2,8 @@ package models
 
 type Conversation struct {
 	Base
-	Title string `gorm:"not null" validate:"required"`
+	Title    string `gorm:"not null" validate:"required"`
+	Messages []Message
 }
 
 type Message struct {

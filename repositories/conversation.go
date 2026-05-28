@@ -16,7 +16,9 @@ func GetConversations(limit, offset int) ([]models.Conversation, error) {
 	if offset > 0 {
 		query = query.Offset(offset)
 	}
-	result := query.Find(&conversations)
+	result := query.
+		Preload("Messages").
+		Find(&conversations)
 
 	return conversations, result.Error
 }
@@ -26,6 +28,7 @@ func GetConversation(condition models.Conversation) (models.Conversation, error)
 
 	result := db.
 		Clauses(clause.Returning{}).
+		Preload("Messages").
 		Where(&condition).
 		First(&conversation)
 
